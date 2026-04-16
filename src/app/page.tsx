@@ -7,7 +7,7 @@ export default function Home() {
   const [data, setData] = useState<any>(null);
 
   async function fetchData() {
-    const res = await fetch(`/api/query?team=${team}`);
+    const res = await fetch(`/api/team/${team}`);
     const json = await res.json();
     setData(json);
   }
