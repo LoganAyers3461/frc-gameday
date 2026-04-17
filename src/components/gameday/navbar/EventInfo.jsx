@@ -8,7 +8,7 @@ export default function EventInfo({ event }) {
 
   return (
     <div className="text-nowrap text-center">
-      <h4>{title}</h4>
+      <h5>{title}</h5>
     </div>
   );
   

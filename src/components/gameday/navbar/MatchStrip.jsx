@@ -9,6 +9,7 @@ export default function MatchList({
   eventTimezone,
   teamView,
 }) {
+  console.log("MatchList render with matches:", matches, "team:", team, "nextMatchKey:", nextMatchKey, "eventTimezone:", eventTimezone, "teamView:", teamView);
   if (!matches.length) return null;
 
   const now = Date.now();
@@ -19,12 +20,10 @@ export default function MatchList({
     // keep future matches
     const isFuture = time > now;
 
-    // ALWAYS keep next match even if stale timestamp
-    const isNextMatch = m?.key === nextMatchKey;
 
-    const isTeamMatch = team && m.isTeamMatch;
+    const isTeamMatch = (teamView.enabled && teamView.teamMatchKeys.includes(m.key) && m.key !== nextMatchKey);
 
-    return isFuture || isNextMatch || isTeamMatch;
+    return (teamView.enabled && isTeamMatch && isFuture) || (!teamView.enabled && isFuture);
   });
 
   const sorted = [...filtered].sort(
