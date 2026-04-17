@@ -58,7 +58,7 @@ export default function StreamModal({
               >
                 <div>
                   <div className="text-white text-sm">
-                    {s.type === "youtube" ? "YouTube Stream" : "Twitch Stream"}
+                    {s.type === "youtube" ? s.meta?.title || "YouTube Stream" : "Twitch Stream"}
                   </div>
                   <div className="text-xs text-gray-400">
                     {s.channel}
@@ -67,7 +67,7 @@ export default function StreamModal({
 
                 {/* active indicator */}
                 {isActive && (
-                  <div className="text-xs text-green-400">
+                  <div className="text-xs text-green-400 text-nowrap">
                     ● LIVE
                   </div>
                 )}

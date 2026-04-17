@@ -60,9 +60,9 @@ export default function GamedayWidget({ event, team }) {
         </div>
 
         {/* CHAT */}
-        <div className="hidden md:flex w-[320px] lg:w-[360px] border-l border-gray-800">
+        {/* <div className="hidden md:flex w-[320px] lg:w-[360px] border-l border-gray-800">
           <ChatView data={data} />
-        </div>
+        </div> */}
       </div>
 
       {/* BOTTOM BAR */}
