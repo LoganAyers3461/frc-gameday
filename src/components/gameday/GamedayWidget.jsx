@@ -35,7 +35,7 @@ export default function GamedayWidget({ event, team }) {
   }, [activeStream]);
 
   // Loading state
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="p-8 text-white">
         Loading gameday...
