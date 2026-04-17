@@ -7,8 +7,8 @@ export default function EventInfo({ event }) {
   }
 
   return (
-    <div className="text-nowrap">
-      <h6>{title}</h6>
+    <div className="text-nowrap text-sm">
+      <span>{title}</span>
     </div>
   );
   

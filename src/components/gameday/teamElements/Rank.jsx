@@ -20,7 +20,7 @@ export default function TeamRank({ status, team }) {
     const total = status.qual?.num_teams;
 
     return (
-        <div className="font-semibold">
+        <div className="font-semibold text-sm">
           <span className="text-white-300">Rank:</span> {rank ?? "?"} / {total ?? "?"}
         </div>
     );

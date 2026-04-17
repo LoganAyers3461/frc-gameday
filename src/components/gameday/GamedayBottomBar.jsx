@@ -14,17 +14,21 @@ export default function GamedayBottomBar({ data, teamInput }) {
   return (
     <div className="flex flex-row gap-2 p-2 h-full">
       <div className="flex-1 flex-col items-center text-nowrap">
-        { teamView.enabled ? <div className="text-sm text-white-800">{team.key.replace("frc", "Team ") || ""} At</div> : null }
+        { teamView.enabled ? <div className="text-xs text-white-800">{team.key.replace("frc", "Team ") || ""} At</div> : null }
         <EventInfo event={event} />
-        { teamView.enabled ? <div className="flex flex-row text-nowrap pt-0"><Rank status={team.status}  team={team} /> <Record status={team.status} /></div> : null }
-        <EventLocalTime timezone={data.event.timezone} />
+        { teamView.enabled ? <div className="flex flex-row text-nowrap pt-0 [@media(hover:none)_and_(pointer:coarse)]:text-xs"><Rank status={team.status}  team={team} /> <Record status={team.status} /></div> : null }
+        <div className="[@media(hover:none)_and_(pointer:coarse)]:hidden">
+          <EventLocalTime timezone={data.event.timezone} />
+        </div>
       </div>
-
+      
       {teamView.enabled ? <LastMatch match={lastMatch} team={team} /> : null}
 
       {teamView.enabled ? <NextMatch match={nextMatch} team={team} /> : null}
-
-      <MatchStrip matches={matches} team={team} nextMatchKey={nextMatch.key ?? null} teamView={teamView} eventTimezone={data.event.timezone} />
+      
+      <div className="flex flex-row text-nowrap pt-0 [@media(hover:none)_and_(pointer:coarse)]:hidden">
+        <MatchStrip matches={matches} team={team} nextMatchKey={nextMatch.key ?? null} teamView={teamView} eventTimezone={data.event.timezone} />
+      </div>
     </div>
   );
 }
