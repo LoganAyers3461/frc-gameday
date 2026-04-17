@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowPathIcon } from "@heroicons/react/24/solid";
 
 export default function RefreshButton({ onRefresh }) {
   const [loading, setLoading] = useState(false);
@@ -22,14 +23,13 @@ export default function RefreshButton({ onRefresh }) {
   return (
     <button
       onClick={handleClick}
-      className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 flex items-center gap-2"
+      className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded"
     >
       {loading ? (
-        <span className="animate-spin">⟳</span>
+        <span className="animate-spin"><ArrowPathIcon className="w-4 h-5 text-white" /></span>
       ) : (
-        <span>⟳</span>
+        <span><ArrowPathIcon className="w-4 h-5 text-white" /></span>
       )}
-      Refresh
     </button>
   );
 }

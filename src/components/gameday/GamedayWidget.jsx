@@ -78,7 +78,7 @@ export default function GamedayWidget({ event, team }) {
             onClick={() => setModalOpen(true)}
             className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded"
           >
-            <VideoCameraIcon className="w-6 h-6 text-white" />
+            <VideoCameraIcon className="w-4 h-5 text-white" />
           </button>
 
           <RefreshButton onRefresh={reload} />
