@@ -1,23 +1,29 @@
 "use client";
 
-import { useGameday } from "@/components/gameday/hooks/useGameday";
-
-export default function StreamView({ data }) {
-  const stream = data?.streams?.[0]; // TODO: support multiple streams and let user choose
-
-  if (!stream) {
+export default function StreamView({ stream }) {
+  if (!stream?.url) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        No Stream Available
+      <div className="text-white p-4">
+        No stream available
+      </div>
+    );
+  }
+
+  // HARD SAFETY: prevent broken embeds
+  if (!stream.url.includes("embed")) {
+    return (
+      <div className="text-red-400 p-4">
+        Invalid stream URL: {stream.url}
       </div>
     );
   }
 
   return (
     <iframe
-      className="w-full h-full"
       src={stream.url}
+      className="w-full h-full"
       allow="autoplay; fullscreen"
+      allowFullScreen
     />
   );
 }

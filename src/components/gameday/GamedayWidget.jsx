@@ -1,15 +1,36 @@
 "use client";
+
+import { useEffect, useState } from "react";
+
 import GamedayBottomBar from "@/components/gameday/GamedayBottomBar";
 import StreamView from "@/components/gameday/StreamView";
 import ChatView from "@/components/gameday/ChatView";
+import StreamControls from "@/components/gameday/StreamControls";
+import StreamModal from "@/components/gameday/StreamModal";
+import RefreshButton from "@/components/gameday/RefreshButton";
 
 import { useGameday } from "@/components/gameday/hooks/useGameday";
+import { useStreamController } from "@/components/gameday/hooks/useStreamController";
 
 export default function GamedayWidget({ event, team }) {
-  console.log("Rendering GamedayWidget with event", event, "team", team);
-  const { data, loading, error } = useGameday(event, team);
-  console.log("GamedayWidget data", data, "loading", loading, "error", error);
+  const { data, loading, error, reload } = useGameday(event, team);
 
+  const [modalOpen, setModalOpen] = useState(false);
+
+  // ALWAYS normalize streams so hook never receives null/undefined
+  const {
+    streams,
+    activeStream,
+    activeKey,
+    setActiveKey,
+  } = useStreamController(data?.streams || []);
+
+  // Debug only (safe now)
+  useEffect(() => {
+    console.log("Active stream:", activeStream);
+  }, [activeStream]);
+
+  // Loading state
   if (loading) {
     return (
       <div className="p-8 text-white">
@@ -18,6 +39,7 @@ export default function GamedayWidget({ event, team }) {
     );
   }
 
+  // Error state
   if (error || !data) {
     return (
       <div className="p-8 text-red-500">
@@ -34,7 +56,7 @@ export default function GamedayWidget({ event, team }) {
 
         {/* STREAM */}
         <div className="flex-1 relative bg-black">
-          <StreamView data={data} />
+          <StreamView stream={activeStream} />
         </div>
 
         {/* CHAT */}
@@ -43,11 +65,35 @@ export default function GamedayWidget({ event, team }) {
         </div>
       </div>
 
-      {/* FIXED BOTTOM NAVBAR */}
+      {/* BOTTOM BAR */}
       <div className="w-full h-[8vh] min-h-fit md:h-[6vh] bg-neutral-900 border-t border-neutral-700 flex flex-row">
 
-        <GamedayBottomBar data={data} team={team} />
+        {/* LEFT SIDE INFO */}
+        <div className="flex-1 flex items-center">
+          <GamedayBottomBar data={data} team={team} />
+        </div>
+
+        {/* CONTROLS */}
+        <div className="flex items-center gap-2 px-3">
+          <button
+            onClick={() => setModalOpen(true)}
+            className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded"
+          >
+            More Streams
+          </button>
+
+          <RefreshButton onRefresh={reload} />
+        </div>
       </div>
+
+      {/* STREAM MODAL */}
+      <StreamModal
+        open={modalOpen}
+        setOpen={setModalOpen}
+        streams={streams}
+        activeKey={activeKey}
+        setActiveKey={setActiveKey}
+      />
     </div>
   );
 }
