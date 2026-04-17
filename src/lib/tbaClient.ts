@@ -7,8 +7,10 @@ export class TBAClient {
 
   async get<T>(endpoint: string, revalidate = 3600): Promise<T> {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
+      cache: "no-store",
       headers: {
         "X-TBA-Auth-Key": this.authKey,
+        "Cache-Control": "no-store",
       },
       next: { revalidate },
     });
