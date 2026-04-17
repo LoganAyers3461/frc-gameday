@@ -77,7 +77,6 @@ export async function GET(
      */
     const nextMatch =
       matches.find((m) => m.key === status?.next_match_key) ||
-      futureMatches[0] ||
       null;
 
     const lastMatch =
