@@ -1,4 +1,4 @@
-import { TBA } from "lib/tbaService";
+import { TBA } from "@/lib/tbaService";
 
 export async function GET(
   req: Request,

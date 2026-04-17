@@ -1,3 +1,4 @@
+import { get } from "http";
 import { tba } from "./tba";
 
 export const TBA = {
@@ -8,16 +9,28 @@ export const TBA = {
   getTeamEvents: (teamKey: string, year: number) =>
     tba.get(`/team/${teamKey}/events/${year}`),
 
+  getTeamEventStatus: (teamKey: string, eventKey: string) =>
+    tba.get(`/team/${teamKey}/event/${eventKey}/status`),
+
+  getTeamMatches: (teamKey: string, eventKey: string) =>
+    tba.get(`/team/${teamKey}/event/${eventKey}/matches`),
+
+  getTeamMatchesSimple: (teamKey: string, eventKey: string) =>
+    tba.get(`/team/${teamKey}/event/${eventKey}/matches/simple`),
+
   // 📅 Events
   getEvent: (eventKey: string) =>
     tba.get(`/event/${eventKey}`),
 
-  getTeamAtEvent: (eventKey: string) =>
+  getTeamsAtEvent: (eventKey: string) =>
     tba.get(`/event/${eventKey}/teams`),
 
   // 🤖 Matches
   getEventMatches: (eventKey: string) =>
     tba.get(`/event/${eventKey}/matches`),
+
+  getEventMatchesSimple: (eventKey: string) =>
+    tba.get(`/event/${eventKey}/matches/simple`),
 
   // 📺 Webcasts
   getEventWebcasts: (eventKey: string) =>

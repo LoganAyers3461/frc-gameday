@@ -4,14 +4,21 @@ import { useState } from "react";
 
 export default function Home() {
   const [team, setTeam] = useState("");
-  const [data, setData] = useState<any>(null);
+  const [teamData, setTeamData] = useState<any>(null);
+  const [event, setEvent] = useState("");
+  const [eventData, setEventData] = useState<any>(null);
 
-  async function fetchData() {
-    const res = await fetch(`/api/team/${team}`);
+  async function fetchTeam() {
+    const res = await fetch(`api/team/${team}`);
     const json = await res.json();
-    setData(json);
+    setTeamData(json);
   }
 
+  async function fetchEvent() {
+    const res = await fetch(`api/event/${event}`);
+    const json = await res.json();
+    setEventData(json);
+  }
   return (
     <main style={{ padding: 20 }}>
       <input
@@ -19,9 +26,18 @@ export default function Home() {
         value={team}
         onChange={(e) => setTeam(e.target.value)}
       />
-      <button onClick={fetchData}>Search</button>
+      <button onClick={fetchTeam}>Search</button>
 
-      <pre>{JSON.stringify(data, null, 2)}</pre>
+      <pre>{JSON.stringify(teamData, null, 2)}</pre>
+
+      <input
+        placeholder="Event key"
+        value={event}
+        onChange={(e) => setEvent(e.target.value)}
+      />
+      <button onClick={fetchEvent}>Search</button>
+
+      <pre>{JSON.stringify(eventData, null, 2)}</pre>
     </main>
   );
 }
