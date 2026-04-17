@@ -15,7 +15,7 @@ export default function GamedayBottomBar({ data, teamInput }) {
       <div className="flex-1 flex-col items-center gap-4 text-nowrap">
         { teamView.enabled ? <div className="text-md text-white-800">{team.key.replace("frc", "Team ") || ""} At</div> : null }
         <EventInfo event={event} />
-        { teamView.enabled ? <div className="flex-row text-nowrap"><span><Rank status={team.status}  team={team} /></span> <span><Record status={team.status} /></span></div> : null }
+        { teamView.enabled ? <div className="flex flex-row text-nowrap "><Rank status={team.status}  team={team} /> <Record status={team.status} /></div> : null }
       </div>
 
       {teamView.enabled ? <LastMatch match={lastMatch} team={team} /> : null}

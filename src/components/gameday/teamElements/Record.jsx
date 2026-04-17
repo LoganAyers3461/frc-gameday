@@ -12,12 +12,12 @@ export default function Record({ status }) {
   if (!record) return <span>-W -L -T</span>;
 
   return (
-    <span className="flex gap-1 items-center">
-      <span className="text-green-400 font-bold">{record.wins}W</span>
-      <span className="text-red-400 font-bold">{record.losses}L</span>
+    <div>
+      <span className="text-green-400 font-bold p-1">{record.wins}W</span>
+      <span className="text-red-400 font-bold gap-1 p-1">{record.losses}L</span>
       {record.ties > 0 && (
-        <span className="text-gray-300 font-bold">{record.ties}T</span>
+        <span className="text-gray-300 font-bold p-1">{record.ties}T</span>
       )}
-    </span>
+    </div>
   );
 }
