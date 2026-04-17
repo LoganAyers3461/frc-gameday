@@ -10,21 +10,23 @@ export default function MatchList({
   eventTimezone,
   teamView,
 }) {
-  //console.log("MatchList render with matches:", matches, "team:", team, "nextMatchKey:", nextMatchKey, "eventTimezone:", eventTimezone, "teamView:", teamView);
   if (!matches.length) return null;
 
   const now = Date.now();
 
   const filtered = matches.filter((m) => {
     const time = (m?.predicted_time || 0) * 1000;
-
-    // keep future matches
     const isFuture = time > now;
 
+    const isTeamMatch =
+      teamView?.enabled &&
+      teamView?.teamMatchKeys?.includes(m.key) &&
+      m.key !== nextMatchKey;
 
-    const isTeamMatch = (teamView.enabled && teamView.teamMatchKeys.includes(m.key) && m.key !== nextMatchKey);
-
-    return (teamView.enabled && isTeamMatch && isFuture) || (!teamView.enabled && isFuture);
+    return (
+      (teamView?.enabled && isTeamMatch && isFuture) ||
+      (!teamView?.enabled && isFuture)
+    );
   });
 
   const sorted = [...filtered].sort(
@@ -32,7 +34,7 @@ export default function MatchList({
   );
 
   return (
-    <div className="flex gap-2 overflow-x-auto w-full">
+  <div className="flex gap-2 w-full overflow-x-auto no-scrollbar">
       {sorted.map((m) => {
         const red = m?.alliances?.red?.team_keys || [];
         const blue = m?.alliances?.blue?.team_keys || [];
@@ -40,28 +42,23 @@ export default function MatchList({
         return (
           <div
             key={m.key}
-            className="bg-neutral-800 p-2 rounded flex gap-2 items-center min-w-[120px]"
+            className="bg-neutral-800 p-2 rounded flex gap-2 items-center shrink-0"
           >
-            <div>
+            <div className="flex flex-col">
               <div className="text-center">{matchCode(m.key)}</div>
-              <div className="text-nowrap">
-                {m.predicted_time ? (
-                  <span className="text-sm text-gray-400">
-                    {formatEventTime(m.predicted_time, eventTimezone)}
-                  </span>
-                ) : (
-                  <span className="text-sm text-gray-400"></span>
-                )}
+              <div className="text-xs text-gray-400">
+                {m.predicted_time
+                  ? formatEventTime(m.predicted_time, eventTimezone)
+                  : ""}
               </div>
             </div>
 
             <div className="flex flex-col">
-              <div className="text-red-400 text-nowrap">
-                {formatAlliance(red, team.key)}
+              <div className="text-red-400">
+                {formatAlliance(red, team?.key)}
               </div>
-
-              <div className="text-blue-400 text-nowrap">
-                {formatAlliance(blue, team.key)}
+              <div className="text-blue-400">
+                {formatAlliance(blue, team?.key)}
               </div>
             </div>
           </div>

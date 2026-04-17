@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import GamedayBottomBar from "@/components/gameday/GamedayBottomBar";
+import GamedayEventTeamInfo from "@/components/gameday/GamedayEventTeamInfo";
 import StreamView from "@/components/gameday/StreamView";
 import ChatView from "@/components/gameday/ChatView";
 import StreamModal from "@/components/gameday/StreamModal";
 import RefreshButton from "@/components/gameday/RefreshButton";
+import MatchStrip from "@/components/gameday/navbar/MatchStrip";
 import { VideoCameraIcon } from "@heroicons/react/24/solid";
 import { UserGroupIcon } from "@heroicons/react/24/solid";
 import { useGameday } from "@/components/gameday/hooks/useGameday";
@@ -68,32 +69,45 @@ export default function GamedayWidget({ event, team }) {
         </div> */}
       </div>
 
-      {/* BOTTOM BAR */}
-      <div className="w-full h-[8vh] min-h-fit md:h-[6vh] bg-neutral-900 border-t border-neutral-700 flex flex-row">
+    {/* BOTTOM BAR */}
+    <div className="w-full h-[8vh] bg-neutral-900 border-t border-neutral-700 flex flex-row items-center overflow-hidden">
 
-        {/* LEFT SIDE INFO */}
-        <div className="flex-1 flex items-center">
-          <GamedayBottomBar data={data} team={team} />
-        </div>
+      {/* LEFT (info) */}
+      <div className="shrink-0">
+        <GamedayEventTeamInfo data={data} />
+      </div>
 
-        {/* CONTROLS */}
-        <div className="flex items-center gap-2 px-3">
+      {/* CENTER (MATCH STRIP CLIPPED ZONE) */}
+      <div className="flex-1 min-w-0 overflow-hidden px-2">
+        <MatchStrip
+          matches={data.matches}
+          team={activeTeam}
+          nextMatchKey={data.nextMatch?.key ?? null}
+          teamView={data.teamView}
+          eventTimezone={data.event.timezone}
+        />
+      </div>
+
+      {/* RIGHT (CONTROLS — ALWAYS VISIBLE) */}
+      <div className="flex items-center gap-2 px-3 shrink-0">
         <button
           onClick={() => setTeamModalOpen(true)}
           className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-sm"
         >
-         <UserGroupIcon className="w-4 h-5 text-white" />
+          <UserGroupIcon className="w-4 h-5 text-white" />
         </button>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded"
-          >
-            <VideoCameraIcon className="w-4 h-5 text-white" />
-          </button>
 
-          <RefreshButton onRefresh={reload} />
-        </div>
+        <button
+          onClick={() => setModalOpen(true)}
+          className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded"
+        >
+          <VideoCameraIcon className="w-4 h-5 text-white" />
+        </button>
+
+        <RefreshButton onRefresh={reload} />
       </div>
+
+    </div>
 
       {/* STREAM MODAL */}
       <StreamModal

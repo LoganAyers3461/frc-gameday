@@ -23,6 +23,12 @@ export default function TeamModal({
         </div>
 
         <div className="flex flex-col gap-2">
+        <button
+        onClick={() => setActiveTeam(null)}
+        className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-sm"
+        >
+        All Teams
+        </button>
           {teams.map((t) => (
             <button
               key={t.key}
