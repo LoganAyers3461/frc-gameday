@@ -21,7 +21,7 @@ export default function TeamRank({ status, team }) {
 
     return (
         <div className="font-semibold">
-          <span className="p-1">Rank: {rank ?? "?"} / {total ?? "?"}</span>
+          <span className="text-white-300">Rank:</span> {rank ?? "?"} / {total ?? "?"}
         </div>
     );
   }

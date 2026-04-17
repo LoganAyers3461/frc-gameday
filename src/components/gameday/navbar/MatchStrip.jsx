@@ -39,7 +39,7 @@ export default function MatchList({
         return (
           <div
             key={m.key}
-            className="bg-neutral-800 p-2 rounded flex gap-2 items-center min-w-[220px]"
+            className="bg-neutral-800 p-2 rounded flex gap-2 items-center min-w-[120px]"
           >
             <div>
               <div className="text-center">{matchCode(m.key)}</div>

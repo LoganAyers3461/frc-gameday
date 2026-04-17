@@ -1,4 +1,5 @@
 import { formatAlliance, matchCode } from "@/lib/tbaFormatters";
+import NextMatchCountdown from "../navbar/NextMatchCountdown";
 
 export default function NextMatch({ match, team }) {
   if (!match) return null;
@@ -9,12 +10,7 @@ export default function NextMatch({ match, team }) {
         <div className="text-center">{matchCode(match.key)}</div>
         <div className="text-nowrap">
           {match.predicted_time ? (
-            <span className="text-sm text-gray-400">
-              {new Date(match.predicted_time * 1000).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
+            <NextMatchCountdown nextMatch={match} timezone={team?.event?.timezone} />
           ) : (
             <span className="text-sm text-gray-400"></span>
           )}
