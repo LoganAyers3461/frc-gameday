@@ -8,30 +8,18 @@ export default function TeamRank({ status, team }) {
       </div>
     );
   }
-
+  
   const isPlayoffs = !!status?.playoff;
   const isQuals = !!status?.qual?.ranking;
+  console.log("TeamRank render with status", status, isPlayoffs, isQuals);
 
-  // ------------------------
-  // QUALIFICATIONS
-  // ------------------------
-  if (isQuals) {
-    const rank = status.qual?.ranking?.rank;
-    const total = status.qual?.num_teams;
-
-    return (
-        <div className="font-semibold text-sm">
-          <span className="text-white-300">Rank:</span> {rank ?? "?"} / {total ?? "?"}
-        </div>
-    );
-  }
 
   // ------------------------
   // PLAYOFFS
   // ------------------------
   if (isPlayoffs) {
     const allianceName = status?.alliance?.name
-      ? status.alliance.name.replace("Alliance", "A").replace(" ", "")
+      ? status.alliance.name
       : "";
 
     const round = status?.playoff?.double_elim_round
@@ -44,8 +32,6 @@ export default function TeamRank({ status, team }) {
 
     return (
       <div className="text-sm flex items-center gap-2">
-        <span className="text-gray-400">Alliance:</span>
-
         <span className="font-semibold">
           {allianceName || "?"}
         </span>
@@ -57,14 +43,25 @@ export default function TeamRank({ status, team }) {
             Eliminated
           </span>
         ) : (
-          <span className="text-yellow-300 font-semibold">
+          <span className="text-white-300 font-semibold">
             {round}
           </span>
         )}
       </div>
     );
-  }
+  } else if (isQuals) {
+  // ------------------------
+  // QUALIFICATIONS
+  // ------------------------
+    const rank = status.qual?.ranking?.rank;
+    const total = status.qual?.num_teams;
 
+    return (
+        <div className="font-semibold text-sm">
+          <span className="text-white-300">Rank:</span> {rank ?? "?"} / {total ?? "?"}
+        </div>
+    );
+  }
   // ------------------------
   // FALLBACK
   // ------------------------

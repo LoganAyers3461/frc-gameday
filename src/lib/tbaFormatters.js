@@ -32,7 +32,7 @@ export function matchShortName(match, eventPlayoffType) {
     const compLevel = match.comp_level;
     const matchNum = match.match_number;
     const setNum = match.set_number;
-    console.log("matchShortName", {compLevel, matchNum, setNum, eventPlayoffType});
+    // console.log("matchShortName", {compLevel, matchNum, setNum, eventPlayoffType});
     switch (compLevel.toUpperCase()) {
       case "F":
         return `Final ${matchNum}`;
