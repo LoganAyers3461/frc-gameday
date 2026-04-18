@@ -62,7 +62,10 @@ export async function GET(
       });
 
     const futureMatches = matches.filter(
-      (m) => m.predicted_time > now
+      (m) => m.predicted_time > now || m.winning_alliance === "" // filter out completed matches without a winner (e.g. unplayed playoffs)
+    );
+    const pastMatches = matches.filter(
+      (m) => m.predicted_time <= now && m.winning_alliance !== "" // filter out future matches and unplayed playoffs
     );
 
     /**
@@ -77,12 +80,9 @@ export async function GET(
      * 4. Resolve next / last match
      */
     const nextMatch =
-      matches.find((m) => m.key === status?.next_match_key) ||
-      null;
-
+      matches.find((m) => ( team && m.key === status?.next_match_key)) || (!team && futureMatches[0])  || null;
     const lastMatch =
-      matches.find((m) => m.key === status?.last_match_key) ||
-      null;
+      matches.find((m) => ( team && m.key === status?.last_match_key)) || (!team && pastMatches[pastMatches.length - 1]) || null;
 
 /**
  * 5. Streams normalization

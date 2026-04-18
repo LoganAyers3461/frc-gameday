@@ -38,26 +38,24 @@ export default function GamedayEventTeamInfo({ data }) {
         </div>
       </div>
 
-      {isTeamMode && (
-        <div className="flex items-center gap-2 shrink-0">
-          <LastMatch 
-            match={lastMatch} 
-            team={team}
-            nextMatchKey={data.nextMatch?.key ?? null}
-            eventTimezone={data.event.timezone}
-            playoffAlliances={data.playoffAlliances}
-            eventPlayoffType={data.event.playoff_type} />
+      <div className="flex items-center gap-2 shrink-0">
+        <LastMatch 
+          match={lastMatch} 
+          team={team}
+          nextMatchKey={data.nextMatch?.key ?? null}
+          eventTimezone={data.event.timezone}
+          playoffAlliances={data.playoffAlliances}
+          eventPlayoffType={data.event.playoff_type} />
 
-          <NextMatch 
-            match={nextMatch} 
-            team={team} 
-            playoffAlliances={data.playoffAlliances}
-            eventPlayoffType={data.event.playoff_type}
-            eventTimezone={data.event.timezone}
-          />
+        <NextMatch 
+          match={nextMatch} 
+          team={team} 
+          playoffAlliances={data.playoffAlliances}
+          eventPlayoffType={data.event.playoff_type}
+          eventTimezone={data.event.timezone}
+        />
 
-        </div>
-      )}      
+      </div>      
     </div>
   );
 }

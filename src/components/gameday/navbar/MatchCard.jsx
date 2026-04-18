@@ -21,14 +21,14 @@ export default function MatchCard({ match, team, isNext, isLast, playoffAlliance
         <div key={match.key} className="bg-neutral-800 p-2 rounded flex gap-2 items-center shrink-0">
             <div className="flex flex-col">
                 <div className="text-center">{matchShortName(match, eventPlayoffType)}</div>
-                <div className="text-xs text-center text-gray-400">
+                <div className="text-center">
                 {match.predicted_time && !isNext && !isLast
-                    ? formatEventTime(match.predicted_time, eventTimezone)
+                    ? <span className="text-xs text-gray-400">{formatEventTime(match.predicted_time, eventTimezone)}</span>
                     : isNext ? <NextMatchCountdown nextMatch={match} timezone={team?.event?.timezone} /> : ""
                 }
                 { isLast ? (
-                    <div className="text-nowrap text-sm">
-                    <span className={`text-red-500 ${isTrackedInRed ? 'font-bold' : ''}`}>{match?.alliances.red.score}</span> - <span className={`text-blue-500 ${isTrackedInBlue ? 'font-bold' : ''}`}>{match?.alliances.blue.score}</span>
+                    <div className="text-nowrap">
+                        <span className={`text-red-500 ${isTrackedInRed ? 'font-bold' : ''}`}>{match?.alliances.red.score}</span> - <span className={`text-blue-500 ${isTrackedInBlue ? 'font-bold' : ''}`}>{match?.alliances.blue.score}</span>
                     </div>
                     ) : null
                 }

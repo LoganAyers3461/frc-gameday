@@ -30,7 +30,7 @@ export default function MatchList({
 
     return (
       (isTeamMatch && isFuture) ||
-      (!teamView?.enabled && isFuture)
+      (!teamView?.enabled && isFuture && m.key !== nextMatchKey)
     );
   });
 
