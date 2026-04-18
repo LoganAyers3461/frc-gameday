@@ -11,7 +11,7 @@ export default function TeamRank({ status, team }) {
   
   const isPlayoffs = !!status?.playoff;
   const isQuals = !!status?.qual?.ranking;
-  console.log("TeamRank render with status", status, isPlayoffs, isQuals);
+  //console.log("TeamRank render with status", status, isPlayoffs, isQuals);
 
 
   // ------------------------
