@@ -89,9 +89,8 @@ export default function MultiviewClient({ children = [] }) {
           </div>
 
             <div className="flex gap-1 flex-wrap">
-                {layout.slots.map((_, index) => {
-                    const childIndex = slotOrder[index];
-                    const child = childArray[childIndex];
+                {childArray.map((child, childIndex) => {
+                    const isActive = childIndex === activeChildIndex;
 
                     const label =
                     child?.props?.eventName ||
@@ -99,18 +98,22 @@ export default function MultiviewClient({ children = [] }) {
                     child?.props?.name ||
                     `Stream ${childIndex + 1}`;
 
-                    const isActive = childIndex === activeChildIndex;
-
                     return (
                     <button
-                        key={childIndex} // IMPORTANT: lock identity to stream, not slot
+                        key={childIndex}
                         onClick={() => {
                         setActiveChildIndex(childIndex);
-                        moveToPrimary(index);
+
+                        // find where this stream currently is
+                        const slotIndex = slotOrder.findIndex(i => i === childIndex);
+
+                        if (slotIndex !== -1) {
+                            moveToPrimary(slotIndex);
+                        }
                         }}
                         className={`
                         px-2 py-1 text-xs rounded transition bg-neutral-700
-                        ${isActive ? "ring-2 ring-white" : ""}
+                        ${isActive ? "ring-2 ring-red" : ""}
                         `}
                     >
                         {label}
