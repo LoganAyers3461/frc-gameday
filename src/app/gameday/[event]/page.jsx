@@ -12,6 +12,8 @@ export default async function GamedayPage({ params, searchParams }) {
 
   return (
     console.log("Rendering GamedayPage with:", { event, team }) || 
-    <GamedayWidget event={event} team={team} />
+    <div className="w-full h-screen flex flex-col bg-black text-white overflow-hidden">
+      <GamedayWidget event={event} team={team} isMultiview={false} />
+    </div>
   );
 }

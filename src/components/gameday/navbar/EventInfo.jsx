@@ -1,6 +1,6 @@
 export default function EventInfo({ event }) {
   let title = "Loading...";
-  console.log("EventInfo render with event:", event);
+  //console.log("EventInfo render with event:", event);
   if (event.event_type === 4) { //event_type 4 = championship finals
     title = `[CMP] ${event.short_name}`;
    }

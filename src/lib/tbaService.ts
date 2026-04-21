@@ -22,6 +22,9 @@ export const TBA = {
   getEvent: (eventKey: string) =>
     tba.get(`/event/${eventKey}`),
 
+  getEventSimple: (eventKey: string) =>
+    tba.get(`/event/${eventKey}/simple`),
+
   getTeamsAtEvent: (eventKey: string) =>
     tba.get(`/event/${eventKey}/teams/simple`),
 

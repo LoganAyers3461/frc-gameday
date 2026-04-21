@@ -18,7 +18,7 @@ export default function EventLocalTime({ timezone }) {
   }, [timezone]);
 
   return (
-    <div className="text-xs text-gray-300">
+    <div>
       <span className="font-mono">
         {now.toLocaleTimeString("en-US", {
           timeZone: timezone,

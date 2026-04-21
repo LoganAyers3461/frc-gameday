@@ -17,7 +17,7 @@ import TeamModal from "@/components/gameday/teamElements/TeamModal";
 import LastMatch from "@/components/gameday/teamElements/LastMatch";
 import NextMatch from "@/components/gameday/teamElements/NextMatch";
 import ViewParentEvent from "./navbar/ViewParentEvent";
-export default function GamedayWidget({ event, team }) {
+export default function GamedayWidget({ event, team, isMultiview }) {
   const [activeTeam, setActiveTeam] = useState(team);
   const { data, loading, error, reload } = useGameday(event, activeTeam);
 
@@ -56,7 +56,7 @@ export default function GamedayWidget({ event, team }) {
   }
 
   return (
-    <div className="w-full h-screen flex flex-col bg-black text-white overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-black text-white overflow-hidden">
 
       {/* MAIN STREAM AREA */}
       <div className="flex-1 w-full flex flex-row overflow-hidden">
@@ -77,7 +77,7 @@ export default function GamedayWidget({ event, team }) {
 
       {/* LEFT (info) */}
       <div className="shrink-0">
-        <GamedayEventTeamInfo data={data} />
+        <GamedayEventTeamInfo data={data} isMultiview={isMultiview} />
       </div>
 
       {/* CENTER (MATCH STRIP CLIPPED ZONE) */}

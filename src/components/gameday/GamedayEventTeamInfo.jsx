@@ -5,11 +5,11 @@ import EventInfo from "@/components/gameday/navbar/EventInfo";
 import Rank from "@/components/gameday/teamElements/Rank";
 import EventLocalTime from "@/components/gameday/navbar/EventLocalTime";
 
-export default function GamedayEventTeamInfo({ data }) {
+export default function GamedayEventTeamInfo({ data, isMultiview }) {
   const { event, team, nextMatch, lastMatch, matches, teamView } = data;
 
   const isTeamMode = teamView?.enabled && team;
-
+  console.log("Is Multiview:", isMultiview);
   return (
     <div className="w-full h-full flex flex-row items-stretch gap-2 px-2 py-2 overflow-hidden">
 
@@ -30,8 +30,8 @@ export default function GamedayEventTeamInfo({ data }) {
           </div>
         )}
 
-        <div className={isTeamMode ? "[@media(hover:none)_and_(pointer:coarse)]:hidden" : ""} >
-          <EventLocalTime timezone={data.event.timezone} />
+        <div className={`text-xs text-gray-400 ${isTeamMode ? "[@media(hover:none)_and_(pointer:coarse)]:hidden" : ""}`}>
+          {!isMultiview && <EventLocalTime timezone={data.event.timezone} />}
         </div>
       </div>
 
