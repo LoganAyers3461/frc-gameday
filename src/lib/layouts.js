@@ -60,22 +60,26 @@ export const LAYOUTS = {
     ],
   },
 
-    onePlusSix: {
+    twoPlusSix: {
     // CMP-style layout
     slots: [
-        // main
-        { x: 0, y: 0, w: 75, h: 66.66 },
+        // main (top middle)
+        { x: 25, y: 0, w: 50, h: 50 },
 
-        // right column (top 3 stacked)
-        { x: 75, y: 0, w: 25, h: 22.22 },
-        { x: 75, y: 22.22, w: 25, h: 22.22 },
-        { x: 75, y: 44.44, w: 25, h: 22.22 },
+        // Secondary (bottom middle)
+        { x: 25, y: 49.95, w: 50, h: 50 },
 
-        // bottom row (NOW FULL WIDTH = 4 tiles)
+        // left column (3 stacked)
+        { x: 0, y: 0,     w: 25, h: 33.33 },
+        { x: 0, y: 33.33, w: 25, h: 33.33 },
         { x: 0, y: 66.66, w: 25, h: 33.33 },
-        { x: 25, y: 66.66, w: 25, h: 33.33 },
-        { x: 50, y: 66.66, w: 25, h: 33.33 },
+
+        // right column (3 stacked)
+        { x: 75, y: 0, w: 25, h: 33.33 },
+        { x: 75, y: 33.33, w: 25, h: 33.33 },
         { x: 75, y: 66.66, w: 25, h: 33.33 },
+        { x: 75, y: 66.66, w: 25, h: 33.33 },
+        
     ],
     },
 
