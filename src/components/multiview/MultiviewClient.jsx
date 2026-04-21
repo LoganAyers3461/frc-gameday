@@ -14,7 +14,7 @@ export default function MultiviewClient({ children = [] }) {
   const [manualOverride, setManualOverride] = useState(false);
   const [selectedLayout, setSelectedLayout] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  const [activeChildIndex, setActiveChildIndex] = useState(null);
   const autoLayout = pickLayout(childArray.length || 1);
   const layoutKey = manualOverride ? selectedLayout : autoLayout;
   const layout = LAYOUTS[layoutKey];
@@ -88,20 +88,36 @@ export default function MultiviewClient({ children = [] }) {
             Multiview ({childArray.length})
           </div>
 
-          <div className="flex gap-1 flex-wrap">
-            {layout.slots.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => moveToPrimary(index)}
-                className={`
-                  px-2 py-1 text-xs rounded transition bg-neutral-700
-                  ${index === 0 ? "ring-1 ring-white" : ""}
-                `}
-              >
-                Slot {index + 1}
-              </button>
-            ))}
-          </div>
+            <div className="flex gap-1 flex-wrap">
+                {layout.slots.map((_, index) => {
+                    const childIndex = slotOrder[index];
+                    const child = childArray[childIndex];
+
+                    const label =
+                    child?.props?.eventName ||
+                    child?.props?.title ||
+                    child?.props?.name ||
+                    `Stream ${childIndex + 1}`;
+
+                    const isActive = childIndex === activeChildIndex;
+
+                    return (
+                    <button
+                        key={childIndex} // IMPORTANT: lock identity to stream, not slot
+                        onClick={() => {
+                        setActiveChildIndex(childIndex);
+                        moveToPrimary(index);
+                        }}
+                        className={`
+                        px-2 py-1 text-xs rounded transition bg-neutral-700
+                        ${isActive ? "ring-2 ring-white" : ""}
+                        `}
+                    >
+                        {label}
+                    </button>
+                    );
+                })}
+            </div>
 
           <button
             onClick={() => setSidebarOpen(v => !v)}

@@ -30,6 +30,7 @@ export default async function DivisionalEvent({ params, searchParams }) {
           key={division.key}
           event={division.key}
           team={teams[0]}
+          eventName={division.short_name}
         />
       ))}
       {/* Parent event */}
@@ -37,6 +38,7 @@ export default async function DivisionalEvent({ params, searchParams }) {
         key={parent.key}
         event={parent.key}
         team={teams[0]}
+        eventName={parent.short_name}
       />
     </MultiviewClient>
   );
