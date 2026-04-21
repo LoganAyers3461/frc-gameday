@@ -113,7 +113,7 @@ export default function MultiviewClient({ children = [] }) {
                         }}
                         className={`
                         px-2 py-1 text-xs rounded transition bg-neutral-700
-                        ${isActive ? "ring-2 ring-red" : ""}
+                        ${isActive ? "ring-2 ring-red-400" : ""}
                         `}
                     >
                         {label}
