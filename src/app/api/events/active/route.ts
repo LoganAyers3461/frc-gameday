@@ -79,7 +79,7 @@ export async function GET() {
   return Response.json(enriched, {
     headers: {
       // keep it fairly fresh during season
-      "Cache-Control": "s-maxage=60, stale-while-revalidate=600",
+      "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600",
     },
   });
 }

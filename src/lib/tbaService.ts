@@ -1,11 +1,19 @@
-import { get } from "http";
 import { tba } from "./tba";
+
+/* -------------------------- */
+/* 🧠 Helpers                 */
+/* -------------------------- */
+
+// ✅ Fix timezone issues (no UTC shifting)
+function parseDate(dateStr: { split: (arg0: string) => { (): any; new(): any; map: { (arg0: NumberConstructor): [any, any, any]; new(): any; }; }; }) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
 
 function getWeekRange(now = new Date()) {
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
 
-  // Sunday as start of week (JS default)
   start.setDate(start.getDate() - start.getDay());
 
   const end = new Date(start);
@@ -15,45 +23,63 @@ function getWeekRange(now = new Date()) {
   return { start, end };
 }
 
-function isEventThisWeek(event: any, weekStart: Date, weekEnd: Date) {
-  const start = new Date(event.start_date);
-  const end = new Date(event.end_date);
+function isEventThisWeek(event: { start_date: any; end_date: any; }, weekStart: number | Date, weekEnd: number | Date) {
+  const start = parseDate(event.start_date);
+  const end = parseDate(event.end_date);
 
   return start <= weekEnd && end >= weekStart;
 }
 
+function isMatchPlayed(match: { actual_time: null; }) {
+  return match?.actual_time != null;
+}
+
+/* -------------------------- */
+/* 🚀 Service                 */
+/* -------------------------- */
+
 export const TBA = {
-  // 👤 Teams
-  getTeam: (teamKey: string) =>
-    tba.get(`/team/${teamKey}`),
+  /* ------------------ */
+  /* 👤 Teams            */
+  /* ------------------ */
 
-  getTeamEvents: (teamKey: string, year: number) =>
-    tba.get(`/team/${teamKey}/events/${year}`),
+  getTeam: (teamKey: any) =>
+    tba.get(`/team/${teamKey}`, 86400),
 
-  getTeamEventStatus: (teamKey: string, eventKey: string) =>
-    tba.get(`/team/${teamKey}/event/${eventKey}/status`),
+  getTeamEvents: (teamKey: any, year: any) =>
+    tba.get(`/team/${teamKey}/events/${year}`, 86400),
 
-  getTeamMatches: (teamKey: string, eventKey: string) =>
-    tba.get(`/team/${teamKey}/event/${eventKey}/matches`),
+  getTeamEventStatus: (teamKey: any, eventKey: any) =>
+    tba.get(`/team/${teamKey}/event/${eventKey}/status`, 300),
 
-  getTeamMatchesSimple: (teamKey: string, eventKey: string) =>
-    tba.get(`/team/${teamKey}/event/${eventKey}/matches/simple`),
+  getTeamMatches: (teamKey: any, eventKey: any) =>
+    tba.get(`/team/${teamKey}/event/${eventKey}/matches`, 30),
 
-  // 📅 Events
-  getEvent: (eventKey: string) =>
-    tba.get(`/event/${eventKey}`),
+  getTeamMatchesSimple: (teamKey: any, eventKey: any) =>
+    tba.get(`/team/${teamKey}/event/${eventKey}/matches/simple`, 30),
 
-  getEventSimple: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/simple`),
+  /* ------------------ */
+  /* 📅 Events           */
+  /* ------------------ */
 
-  getEvents: (year: number) =>
-  tba.get(`/events/${year}`),
+  getEvent: (eventKey: any) =>
+    tba.get(`/event/${eventKey}`, 86400),
 
-  getEventsSimple: (year:number) =>
-    tba.get(`/events/${year}/simple`),
+  getEventSimple: (eventKey: any) =>
+    tba.get(`/event/${eventKey}/simple`, 86400),
 
-  getActiveEvents: async (year: number) => {
-    const events:any = await TBA.getEvents(year);
+  getEvents: (year: any) =>
+    tba.get(`/events/${year}`, 86400),
+
+  getEventsSimple: (year: any) =>
+    tba.get(`/events/${year}/simple`, 86400),
+
+  /* ------------------ */
+  /* 🔍 Derived Events   */
+  /* ------------------ */
+
+  getActiveEvents: async (year: any) => {
+    const events = await TBA.getEvents(year) as any[];
 
     const { start, end } = getWeekRange();
 
@@ -62,11 +88,11 @@ export const TBA = {
     );
   },
 
-  getActiveEventsWithTeams: async (year: number) => {
+  getActiveEventsWithTeams: async (year: any) => {
     const activeEvents = await TBA.getActiveEvents(year);
 
-    const results = await Promise.all(
-      activeEvents.map(async (event: any) => {
+    return Promise.all(
+      activeEvents.map(async (event: { key: any; }) => {
         const teams = await TBA.getTeamsAtEvent(event.key);
 
         return {
@@ -75,70 +101,95 @@ export const TBA = {
         };
       })
     );
-
-    return results;
   },
 
-  getActiveEventsWithMatches: async (year: number) => {
-    const events:any = await TBA.getEvents(year);
+  getActiveEventsWithMatches: async (year: any) => {
+    const events = await TBA.getEvents(year) as any[];
 
     const now = new Date();
 
-    const candidates = events.filter((e: any) => {
-      const start = new Date(e.start_date);
-      const end = new Date(e.end_date);
+    const candidates = events.filter((e: { start_date: any; end_date: any; }) => {
+      const start = parseDate(e.start_date);
+      const end = parseDate(e.end_date);
+
       return start <= now && now <= end;
     });
 
     const enriched = await Promise.all(
       candidates.map(async (event: any) => {
-        const matches:any = await TBA.getEventMatchesSimple(event.key);
+        const matches = await TBA.getEventMatchesSimple(event.key) as any[];
 
-        const hasStarted = matches.some((m: any) => m.actual_time !== null);
+        const hasPlayedMatches = matches.some(isMatchPlayed);
 
-        return hasStarted ? event : null;
+        return hasPlayedMatches ? event : null;
       })
     );
 
     return enriched.filter(Boolean);
   },
 
-  getActiveEventsFull: async (year: number) => {
+  getActiveEventsFull: async (year: any) => {
     const events = await TBA.getActiveEventsWithMatches(year);
 
     return Promise.all(
-      events.map(async (event: any) => {
+      events.filter(Boolean).map(async (event: { key: any; division_keys: string | any[]; start_date: any; }) => {
         const [teams, matches] = await Promise.all([
-          TBA.getTeamsAtEvent(event.key),
-          TBA.getEventMatchesSimple(event.key),
-        ]);
+          TBA.getTeamsAtEvent(event.key), // 24h cache
+          TBA.getEventMatchesSimple(event.key), // 30s cache
+        ]) as [any[], any[]];
+
+        const hasDivisions = (event.division_keys?.length ?? 0) > 0;
+        const hasMatches = matches.length > 0;
+        const hasPlayedMatches = matches.some(isMatchPlayed);
+
+        const now = new Date();
+        const start = parseDate(event.start_date);
+
+        const isPastStart = now >= start;
 
         return {
           ...event,
           teams,
-          matches, // optional but VERY useful later
+          matches,
+
+          flags: {
+            isPastStart,
+            hasDivisions,
+            hasMatches,
+            hasPlayedMatches,
+          },
         };
       })
     );
   },
 
-  getTeamsAtEvent: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/teams/simple`),
-  
-  getTeamKeysAtEvent: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/teams/keys`),
-  
-  getEventPlayoffAlliances: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/alliances`),
+  /* ------------------ */
+  /* 🧍 Event Teams      */
+  /* ------------------ */
 
-  // 🤖 Matches
-  getEventMatches: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/matches`),
+  getTeamsAtEvent: (eventKey: any) =>
+    tba.get(`/event/${eventKey}/teams/simple`, 86400),
 
-  getEventMatchesSimple: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/matches/simple`),
+  getTeamKeysAtEvent: (eventKey: any) =>
+    tba.get(`/event/${eventKey}/teams/keys`, 86400),
 
-  // 📺 Webcasts
-  getEventWebcasts: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/webcasts`),
+  getEventPlayoffAlliances: (eventKey: any) =>
+    tba.get(`/event/${eventKey}/alliances`, 300),
+
+  /* ------------------ */
+  /* 🤖 Matches          */
+  /* ------------------ */
+
+  getEventMatches: (eventKey: any) =>
+    tba.get(`/event/${eventKey}/matches`, 30),
+
+  getEventMatchesSimple: (eventKey: any) =>
+    tba.get(`/event/${eventKey}/matches/simple`, 30),
+
+  /* ------------------ */
+  /* 📺 Webcasts         */
+  /* ------------------ */
+
+  getEventWebcasts: (eventKey: any) =>
+    tba.get(`/event/${eventKey}/webcasts`, 86400),
 };

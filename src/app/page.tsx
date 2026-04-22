@@ -77,10 +77,11 @@ export default function HomePage() {
             <MatchStrip matches={event.matches} team={null} teamView={false} playoffAlliances={[]} eventTimezone={event.timezone} eventPlayoffType={event.playoff_type} nextMatchKey={null}/>
           </div>
 
-          <div className="flex gap-1">
-            { hasDivisions ? (<button className="bg-neutral-800  hover:bg-zinc-800 rounded p-1" onClick={()=> router.push(`/gameday/divisional-event/${event.key}`)}>Watch All Divisions</button>) : null  }
-            <button onClick={() => toggleEvent(event.key)} className={`rounded p-1 ${selected ? "bg-blue-600 text-white" : "bg-neutral-800  hover:bg-zinc-800"}`}>
-              Add to Multiview
+          <div className="flex flex-col gap-1">
+            { hasDivisions ? (<button className="bg-neutral-800 w-full hover:bg-zinc-800 rounded p-2" onClick={()=> router.push(`/gameday/divisional-event/${event.key}`)}>View Divisions</button>) : null  }
+            <button className="bg-neutral-800 w-full hover:bg-zinc-800 rounded p-2">Watch</button>
+            <button onClick={() => toggleEvent(event.key)} className={`w-full rounded p-2 ${selected ? "bg-blue-600 text-white" : "bg-neutral-800  hover:bg-zinc-800"}`}>
+              Multiview
             </button>
           </div>
 

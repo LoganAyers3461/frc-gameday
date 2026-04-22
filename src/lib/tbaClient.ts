@@ -7,18 +7,16 @@ export class TBAClient {
 
   async get<T>(endpoint: string, revalidate = 3600): Promise<T> {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
-      cache: "no-store",
       headers: {
         "X-TBA-Auth-Key": this.authKey,
-        "Cache-Control": "no-store",
       },
-      next: { revalidate: 10 },
+      next: { revalidate },
     });
 
     if (!res.ok) {
       throw new Error(`TBA ${res.status}: ${await res.text()}`);
     }
-
+    console.log(`[TBA Client] ${endpoint}`)
     return res.json();
   }
 }
