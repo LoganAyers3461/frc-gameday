@@ -18,6 +18,11 @@ export default function EventInfo({ event }) {
     title = event.name.length > 20 ? event.short_name : event.name;
   }
 
+  if (title.length === 0) {
+    console.warn("Event Title is 0 Chars, falling back to", event.name)
+    title = event.name
+  }
+
   return (
     <span className="text-nowrap text-sm">{title}</span>
   );
