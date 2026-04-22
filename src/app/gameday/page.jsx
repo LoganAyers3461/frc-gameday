@@ -29,7 +29,7 @@ export default async function DivisionalEvent({ params, searchParams }) {
           key={event.key}
           event={event.key}
           team={teams[0]}
-          eventName={event.short_name}
+          eventName={event.short_name || event.name || event.key}
           isDivisional={false}
         />
       ))}
