@@ -5,9 +5,11 @@ import { LAYOUTS, pickLayout } from "@/lib/layouts";
 import React from "react";
 import EventLocalTime from "../gameday/navbar/EventLocalTime";
 import EventInfo from "../gameday/navbar/EventInfo";
+import { useRouter } from "next/navigation";
 
 export default function MultiviewClient({ isDivisional, parentEvent, children = [] }) {
-  // Normalize children into stable array
+  const router = useRouter();
+    // Normalize children into stable array
   const childArray = useMemo(() => React.Children.toArray(children), [children]);
 
   // ==============================
@@ -93,17 +95,17 @@ export default function MultiviewClient({ isDivisional, parentEvent, children = 
         <div className="flex justify-between items-center px-2 h-10 border-b border-neutral-800">
 
             <div className="text-sm flex gap-2 items-baseline">
-            {isDivisional && parentEvent ? (
-                <span className="font-bold">
-                    <EventInfo event={parentEvent} />
-                </span>
-            ) : null}
+                {isDivisional && parentEvent ? (
+                    <span className="font-bold">
+                        <EventInfo event={parentEvent} />
+                    </span>
+                ) : <button className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-sm" onClick={() => router.push("/")}>Home</button>}
 
-            {isDivisional && parentEvent ? (
-                <span className="text-xs text-gray-400">
-                    <EventLocalTime timezone={parentEvent.timezone} />
-                </span>
-            ) : null}
+                {isDivisional && parentEvent ? (
+                    <span className="text-xs text-gray-400">
+                        <EventLocalTime timezone={parentEvent.timezone} />
+                    </span>
+                ) :null}
             </div>
 
             <div className="flex gap-1 flex-wrap">
