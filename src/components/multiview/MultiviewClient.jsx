@@ -94,7 +94,7 @@ export default function MultiviewClient({ isDivisional, parentEvent, children = 
         {/* CONTROL BAR */}
         <div className="flex justify-between items-center px-2 h-10 border-b border-neutral-800">
 
-            <div className="text-sm flex gap-2 items-baseline">
+            <div className="text-sm flex sm:flex-col items-baseline">
                 {isDivisional && parentEvent ? (
                     <span className="font-bold">
                         <EventInfo event={parentEvent} />
@@ -108,7 +108,7 @@ export default function MultiviewClient({ isDivisional, parentEvent, children = 
                 ) :null}
             </div>
 
-            <div className="flex gap-1 flex-wrap">
+            <div className="flex gap-1">
                 {childArray.map((child, childIndex) => {
                     const isActive = childIndex === activeChildIndex;
 
@@ -120,15 +120,14 @@ export default function MultiviewClient({ isDivisional, parentEvent, children = 
 
                     return (
                     <button
-                        key={childIndex}
-                        onClick={() => {
+                      key={childIndex}
+                      onClick={() => {
                         const isActive = childIndex === activeChildIndex;
 
                         if (isActive) {
-                           
-                            setSlotOrder(homeSlotOrder);
-                            setActiveChildIndex(null);
-                            return;
+                          setSlotOrder(homeSlotOrder);
+                          setActiveChildIndex(null);
+                          return;
                         }
 
                         setActiveChildIndex(childIndex);
@@ -136,15 +135,16 @@ export default function MultiviewClient({ isDivisional, parentEvent, children = 
                         const slotIndex = slotOrder.findIndex(i => i === childIndex);
 
                         if (slotIndex !== -1) {
-                            moveToPrimary(slotIndex);
+                          moveToPrimary(slotIndex);
                         }
-                        }}
-                        className={`
+                      }}
+                      className={`
                         px-2 py-1 text-xs rounded transition bg-neutral-800 hover:bg-neutral-700
-                        ${isActive ? "ring-2 ring-red-400" : ""}
-                        `}
+                        truncate min-w-0 max-w-50
+                        ${isActive ? "ring-2 ring-white" : ""}
+                      `}
                     >
-                        {label}
+                      {label.replace("- FIRST Robotics Competition", "")}
                     </button>
                     );
                 })}
