@@ -10,7 +10,7 @@ export default function EventInfo({ event }) {
   else if (event.event_type === 2) { //event_type 2 = district championship finals
     title = `${event.name}`;
   } else if (event.event_type === 5) { //event_type 5 = district championship division
-    title = `[${event.district.abbreviation.toUpperCase()} DCMP] ${event.name.length > 20 ? event.short_name : event.name}`;
+    title = `[${event.district.abbreviation.toUpperCase()} DCMP] ${event.name.length > 20 ? event.short_name.split("-")[1] : event.name}`;
   } else if (event.event_type === 1 && event.district) { // Regular district event
     title = `[${event.district.abbreviation.toUpperCase()}] ${event.name.length > 20 ? event.short_name : event.name}`;
   } 
