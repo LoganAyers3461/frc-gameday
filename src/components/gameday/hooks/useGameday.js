@@ -67,7 +67,7 @@ export function useGameday(event, team) {
     fetchData();
 
     // polling
-    interval = setInterval(fetchData, 150000); // 2.5 minutes
+    interval = setInterval(fetchData, 15000); 
 
     return () => {
       cancelled = true;
