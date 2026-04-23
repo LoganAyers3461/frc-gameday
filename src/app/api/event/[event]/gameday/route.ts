@@ -3,19 +3,20 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { TBA } from "@/lib/tbaService";
 
-// simple in-memory cache (swap for Redis later if needed)
-const cache = new Map<string, { timestamp: number; data: any }>();
+import { normalizeMatches } from "@/lib/gameday/normalizeMatches";
+import { getNextMatch } from "@/lib/gameday/getNextMatch";
+import { getLastMatch } from "@/lib/gameday/getLastMatch";
 
-const CACHE_TTL = 30_000; // 30 seconds
+const cache = new Map<string, { timestamp: number; data: any }>();
+const CACHE_TTL = 30_000;
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ event: string }> }
 ) {
   const { event } = await params;
-
   const { searchParams } = new URL(req.url);
-  const team = searchParams.get("team"); // optional
+  const team = searchParams.get("team");
 
   const cacheKey = `gameday:${event}:${team ?? "all"}`;
   const cached = cache.get(cacheKey);
@@ -26,11 +27,14 @@ export async function GET(
 
   try {
     /**
-     * 1. Load event core data
+     * 1. Fetch core data
      */
-    const eventData: any = await TBA.getEvent(event);
-    const teamsAtEvent = await TBA.getTeamsAtEvent(event);
-    const playoffAlliances = await TBA.getEventPlayoffAlliances(event) || [];
+    const [eventData, teams, alliances, matchesRaw] = await Promise.all([
+      TBA.getEvent(event),
+      TBA.getTeamsAtEvent(event),
+      TBA.getEventPlayoffAlliances(event).catch(() => []),
+      TBA.getEventMatchesSimple(event),
+    ]);
 
     if (!eventData) {
       return NextResponse.json(
@@ -40,36 +44,18 @@ export async function GET(
     }
 
     /**
-     * 2. Load matches
+     * 2. Normalize matches (NO semantic filtering here)
      */
-    const matchesRaw = await TBA.getEventMatchesSimple(event);
-
-    const now = Math.floor(Date.now() / 1000);
-
-    const matches = ((matchesRaw as any[]) || [])
-      .slice()
-      .sort((a, b) => a.predicted_time - b.predicted_time)
-      .map((m) => {
-        const isTeamMatch = team
-          ? m.alliances.red.team_keys.includes(`${team}`) ||
-            m.alliances.blue.team_keys.includes(`${team}`)
-          : false;
-
-        return {
-          ...m,
-          isTeamMatch,
-        };
-      });
-
-    const futureMatches = matches.filter(
-      (m) => m.predicted_time > now || (m.actual_time === null ) // filter out completed matches without a winner (e.g. unplayed playoffs)
-    );
-    const pastMatches = matches.filter(
-      (m) => m.predicted_time <= now && m.actual_time !== null // filter out future matches and unplayed playoffs
-    );
+    const matches = normalizeMatches(matchesRaw, team ?? undefined);
 
     /**
-     * 3. Team status (optional but useful for next/last match)
+     * 3. Derived state (OLD SIMPLE MODEL RESTORED)
+     */
+    const nextMatch = getNextMatch(matches);
+    const lastMatch = getLastMatch(matches);
+
+    /**
+     * 4. Optional team status
      */
     let status: any = null;
     if (team) {
@@ -77,102 +63,36 @@ export async function GET(
     }
 
     /**
-     * 4. Resolve next / last match
+     * 5. Streams (unchanged)
      */
-    const nextMatch =
-      matches.find((m) => ( team && m.key === status?.next_match_key)) || (!team && futureMatches[0])  || null;
-    const lastMatch =
-      matches.find((m) => ( team && m.key === status?.last_match_key)) || (!team && pastMatches[pastMatches.length - 1]) || null;
-
-/**
- * 5. Streams normalization
- */
-const sortedWebcasts = (eventData.webcasts as Array<any> || [])
-  .slice()
-  .sort((a, b) => {
-    const aTime = a.date ? new Date(a.date).getTime() : 0;
-    const bTime = b.date ? new Date(b.date).getTime() : 0;
-
-    return aTime - bTime;
-  })
-
-const streams = await Promise.all(
-  sortedWebcasts.map(async (wc: any) => {
-    if (wc.type === "twitch") {
-      return {
-        type: "twitch",
-        channel: wc.channel,
-        url: `https://player.twitch.tv/?autoplay=true&channel=${wc.channel}&parent=${process.env.NEXT_PUBLIC_DOMAIN || "localhost"}`,
-        chat: `https://www.twitch.tv/embed/${wc.channel}/chat?parent=${process.env.NEXT_PUBLIC_DOMAIN || "localhost"}`,
-        date: wc.date,
-        meta: null,
-      };
-    }
-
-    let meta = null;
-
-    try {
-      const res = await fetch(
-        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${wc.channel}&format=json`
-      );
-
-      if (res.ok) {
-        meta = await res.json();
-      }
-    } catch {
-      meta = null;
-    }
-
-    return {
-      type: "youtube",
+    const streams = (eventData.webcasts || []).map((wc: any) => ({
+      type: wc.type,
       channel: wc.channel,
-      url: `https://www.youtube.com/embed/${wc.channel}?autoplay=1`,
-      chat: `https://www.youtube.com/live_chat?v=${wc.channel}`,
       date: wc.date,
-      meta,
-    };
-  })
-);
+    }));
 
     /**
-     * 6. Team match keys (for UI strip highlighting)
-     */
-    const teamMatchKeys = team
-      ? matches
-          .filter((m) => m.isTeamMatch)
-          .map((m) => m.key)
-      : [];
-
-    /**
-     * 7. Final response
+     * 6. Response (clean + minimal derivation)
      */
     const response = {
       event: eventData,
       team: team
         ? {
             key: team,
-            status: status
+            status,
           }
         : null,
+
+      matches,
       nextMatch,
       lastMatch,
-      teams: teamsAtEvent,
-      matches,
+
+      teams,
       streams,
-      playoffAlliances,
-      teamView: team
-        ? {
-            enabled: true,
-            teamMatchKeys,
-          }
-        : {
-            enabled: false,
-            teamMatchKeys: [],
-          },
+      playoffAlliances: alliances,
 
       meta: {
         generatedAt: Date.now(),
-        mode: team ? "team-filtered" : "event",
       },
     };
 

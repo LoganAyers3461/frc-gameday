@@ -2,6 +2,7 @@ export default function TeamModal({
   open,
   setOpen,
   teams,
+  playoffAlliances,
   activeTeam,
   setActiveTeam
 }) {
@@ -24,11 +25,28 @@ export default function TeamModal({
 
         <div className="flex flex-col gap-2">
         <button
-        onClick={() => setActiveTeam(null)}
+        onClick={() => {setActiveTeam(null); setOpen(false)}}
         className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-sm"
         >
         All Teams
         </button>
+          {playoffAlliances.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => {
+                setActiveTeam(t.name);
+                setOpen(false);
+              }}
+              className={`text-left px-3 py-2 rounded transition ${
+                t.key === activeTeam
+                  ? "bg-white text-black"
+                  : "bg-neutral-800 text-white hover:bg-neutral-700"
+              }`}
+            >
+              {t.name} — {t.picks.join(" ").replace(/frc/g, "")}
+            </button>
+          ))}
+
           {teams.map((t) => (
             <button
               key={t.key}

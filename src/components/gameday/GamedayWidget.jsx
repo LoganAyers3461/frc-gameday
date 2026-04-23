@@ -163,6 +163,7 @@ export default function GamedayWidget({ event, team, isDivisional }) {
         open={teamModalOpen}
         setOpen={setTeamModalOpen}
         teams={data.teams}
+        playoffAlliances={data.playoffAlliances}
         activeTeam={activeTeam}
         setActiveTeam={setActiveTeam}
       />

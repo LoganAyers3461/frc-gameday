@@ -176,6 +176,9 @@ export const TBA = {
   getEventPlayoffAlliances: (eventKey: any) =>
     tba.get(`/event/${eventKey}/alliances`, 300),
 
+  getEventTeamsStatuses: (eventKey:any) =>
+    tba.get(`/event/${eventKey}/teams/statuses`, 300),
+
   /* ------------------ */
   /* 🤖 Matches          */
   /* ------------------ */
