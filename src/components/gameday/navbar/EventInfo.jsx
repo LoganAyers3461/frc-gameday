@@ -2,7 +2,7 @@ export default function EventInfo({ event }) {
   let title = "Loading...";
   //console.log("EventInfo render with event:", event);
   if (event.event_type === 4) { //event_type 4 = championship finals
-    title = `[CMP] ${event.short_name}`;
+    title = `[CMP] ${event.short_name.replace("- FIRST Robotics Competition", "")}`;
    }
   else if (event.event_type === 3) { //event_type 3 = championship division
     title = `[CMP] ${event.short_name}`;
