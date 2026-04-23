@@ -78,11 +78,14 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-col gap-1">
-            { hasDivisions ? (<button className="bg-neutral-800 w-full hover:bg-zinc-800 rounded p-2" onClick={()=> router.push(`/gameday/divisional-event/${event.key}`)}>View Divisions</button>) : null  }
-            <button className="bg-neutral-800 w-full hover:bg-zinc-800 rounded p-2">Watch</button>
-            <button onClick={() => toggleEvent(event.key)} className={`w-full rounded p-2 ${selected ? "bg-blue-600 text-white" : "bg-neutral-800  hover:bg-zinc-800"}`}>
-              Multiview
-            </button>
+            <button className="bg-neutral-800 w-full hover:bg-zinc-800 rounded p-2" onClick={()=> router.push(`/gameday/${event.key}`)}>Watch</button>
+            { hasDivisions ? 
+            (<button className="bg-neutral-800 w-full hover:bg-zinc-800 rounded p-2" onClick={()=> router.push(`/gameday/divisional-event/${event.key}`)}>View Divisions</button>) : 
+            (
+              <button onClick={() => toggleEvent(event.key)} className={`w-full rounded p-2 ${selected ? "bg-blue-600 text-white" : "bg-neutral-800  hover:bg-zinc-800"}`}>
+                Multiview
+              </button>
+            )}
           </div>
 
         </div>
