@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { event: event } = await params;
 
-  const data = await getEventData(event, "teams:statuses", () =>
+  const data = await getEventData(event, "teams:statuses", revalidate, () =>
     TBA.getEventTeamsStatuses(event)
   );
 

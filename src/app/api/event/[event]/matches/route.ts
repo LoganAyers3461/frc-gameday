@@ -1,5 +1,6 @@
 import { getEventData } from "@/lib/tbaEventCache";
 import { TBA } from "@/lib/tbaService";
+import { revalidate } from "../route";
 
 export const GET = async (req: Request,
   { params }: { params: Promise<{ event: string }> }) => {
@@ -10,7 +11,7 @@ export const GET = async (req: Request,
   }
 
 
-  const data = await getEventData(event, "matches", () =>
+  const data = await getEventData(event, "matches", revalidate, () =>
     TBA.getEventMatches(event)
   );
   return Response.json(data);

@@ -12,7 +12,7 @@ export const GET = async (  req: Request,
   }
 
 
-  const data = await getEventData(event, "teams", () =>
+  const data = await getEventData(event, "teams", revalidate, () =>
     TBA.getTeamsAtEvent(event)
   );
 
