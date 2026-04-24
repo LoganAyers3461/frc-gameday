@@ -168,6 +168,9 @@ export const TBA = {
   /* ------------------ */
 
   getTeamsAtEvent: (eventKey: any) =>
+    tba.get(`/event/${eventKey}/teams`, 86400),
+
+  getTeamsAtEventSimple: (eventKey: any) =>
     tba.get(`/event/${eventKey}/teams/simple`, 86400),
 
   getTeamKeysAtEvent: (eventKey: any) =>

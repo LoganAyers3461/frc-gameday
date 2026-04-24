@@ -1,5 +1,5 @@
 import { TBA } from "@/lib/tbaService";
-
+export const revalidate = 36000;
 type EventState = "upcoming" | "in_progress" | "complete";
 
 function getEventState(event: any): "upcoming" | "in_progress" | "complete" {
@@ -76,10 +76,5 @@ export async function GET() {
     return (new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
   });
 
-  return Response.json(enriched, {
-    headers: {
-      // keep it fairly fresh during season
-      "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600",
-    },
-  });
+  return Response.json(enriched);
 }

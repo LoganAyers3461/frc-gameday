@@ -1,5 +1,5 @@
 import { TBA } from "@/lib/tbaService";
-
+export const revalidate = 15000;
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ event: string }> }
@@ -8,9 +8,5 @@ export async function GET(
 
   const data = await TBA.getEvent(event);
 
-  return Response.json(data, {
-    headers:{
-      "Cache-Control": "public, max-age=3600, stale-while-revalidate=500"
-    }
-  });
+  return Response.json(data);
 }
