@@ -56,7 +56,7 @@ export default function TeamModal({
             </button>
           ))} */}
 
-          {teams.map((t) => (
+          { teams.sort((a, b) => {return (a.team_number - b.team_number)}).map((t) => (
             <button
               key={t.key}
               onClick={() => {
