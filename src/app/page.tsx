@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import MatchList from "@/components/gameday/navbar/MatchStrip";
+import MatchStrip from "@/components/gameday/navbar/MatchStrip";
 import { dumbDateString } from "@/lib/time"
 
 export default function HomePage() {
@@ -69,12 +69,29 @@ export default function HomePage() {
       <div className="bg-neutral-900 border-t border-neutral-700 p-3 gap-2 rounded-lg"> 
         <div className="flex justify-between items-center">
           <div>
-            <div className="font-semibold">{event.name.replace("- FIRST Robotics Competition", "")}</div>
+            <div className="font-semibold">{event.name.replace("- FIRST Robotics Competition", "").replace("Presented", "presented").split("presented by")[0]}</div>
             <div><span className="text-xs opacity-70">{event.event_type_string}</span></div>
             <div><span className="text-xs">{dumbDateString(event.start_date)} - {dumbDateString(event.end_date)}</span></div>
           </div>
-          <div className="flex max-w-50">
-            <MatchList matches={event.matches} team={null} playoffAlliances={[]} eventTimezone={event.timezone} eventPlayoffType={event.playoff_type} nextMatchKey={null} lastMatchKey={undefined} />
+          <div className="flex-1 min-w-0 overflow-hidden px-1 gap-2">
+            <div className="relative w-full overflow-hidden">
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-r from-neutral-900 to-transparent" />
+
+              <div className="pl-2 pr-2 flex gap-1 w-full pt-1 pb-1 overflow-x-auto no-scrollbar">
+                <MatchStrip
+                  matches={event.matches}
+                  nextMatchKey={event.matches.sort((a:any, b:any)=> a.predicted_time - b.predicted_time).find((m:any)=> m.actual_time === null)}
+                  lastMatchKey={event.matches.sort((a:any, b:any)=> a.predicted_time - b.predicted_time).findLast((m:any)=>m.actual_time !== null)}
+                  eventPlayoffType={event.playoff_type}
+                  playoffAlliances={[]}
+                  eventTimezone={event?.timezone}
+                  team={[]}
+                />
+              </div>
+              {/* 3. Right fade overlay */}
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-neutral-900 to-transparent" />
+
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -98,7 +115,7 @@ export default function HomePage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Gameday Event Selector</h1>
+            <h1 className="text-2xl font-bold">FRC Gameday Event Selector</h1>
             <p>Select event(s) below. </p>
           </div>
 
@@ -126,6 +143,11 @@ export default function HomePage() {
                 <EventCard key={e.key} event={e} />
               ))}
             </Section>
+            {/* <Section title="Completed Events">
+              {grouped.complete?.map(e => (
+                <EventCard key={e.key} event={e} />
+              ))}
+            </Section> */}
           </div>
         )}
       </div>

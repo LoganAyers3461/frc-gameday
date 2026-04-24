@@ -5,7 +5,8 @@ import { formatEventTime } from "../../../lib/time";
 export default function MatchCard({ match, team, isNext, isLast, playoffAlliances, eventPlayoffType, eventTimezone }) {
     if (!match) return null;
     if (!playoffAlliances) playoffAlliances = [];
-    console.log("[Match Card] Team", team)
+    if (!team) team = [];
+    //console.log("[Match Card] Team", team)
     const red = match?.alliances?.red?.team_keys || [];
     const blue = match?.alliances?.blue?.team_keys || [];
     const isTrackedInRed = red.some((red)=> team.includes(red));

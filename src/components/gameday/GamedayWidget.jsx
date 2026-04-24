@@ -159,7 +159,7 @@ export default function GamedayWidget({ event, initialTeams = [], isDivisional }
             /> */}
             <MatchStrip
               matches={matchContext.list}
-              nextMatchKey={matchContext.next?.key}
+              nextMatchKey={matchContext.next}
               lastMatchKey={matchContext.last}
               eventPlayoffType={eventData.playoff_type}
               playoffAlliances={playoffAlliances}

@@ -16,7 +16,7 @@ export default function MatchList({
   return (
     <div className="flex gap-2 w-full overflow-x-auto no-scrollbar">
       <MatchCard 
-        key={lastMatchKey} 
+        key={lastMatchKey?.key } 
         match={lastMatchKey} 
         team={team}
         isNext={lastMatchKey === nextMatchKey}
@@ -26,7 +26,7 @@ export default function MatchList({
         eventTimezone={eventTimezone} 
       />
       <MatchCard 
-        key={nextMatchKey} 
+        key={nextMatchKey?.key} 
         match={nextMatchKey} 
         team={team}
         isNext={nextMatchKey === nextMatchKey}
