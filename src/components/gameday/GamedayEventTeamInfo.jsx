@@ -20,7 +20,7 @@ export default function GamedayEventTeamInfo({ event, team: teamKey, teamStatus,
 
     return teamKey.find(t => teamsInMatch.includes(t)) || teamKey[0];
   }, [teamKey, nextMatch, lastMatch]);
-  console.log(activeDisplayTeam)
+  //console.log(activeDisplayTeam)
   return (
     <div className="w-full h-full flex flex-row items-stretch gap-2 px-2 py-2 overflow-hidden">
 
