@@ -33,15 +33,21 @@ export default function GamedayWidget({ event, team, isDivisional }) {
   const {teams: teams} = useTeams(event);
   const {teamsStatuses: teamStatuses} = useTeamsStatuses(event);
   const [activeTeam, setActiveTeam] = useState(team);
-  
-  const { matches } = useMatches(event, activeTeam ? [activeTeam] : []);
+
+  const [trackedTeams, setTrackedTeams] = useState([]);
+  function addTrackedTeam(teamKey) {
+    setTrackedTeams((prev) => [...prev, teamKey]);
+  }
+  function removeTrackedTeam(teamKey) {
+    setTrackedTeams((prev) => prev.filter((t) => t !== teamKey));
+  }
+
+  const { matches } = useMatches(event);
 
   const {alliances: playoffAlliances} = usePlayoffAlliances(event);
 
-  const trackedTeams = useMemo(() => {
-    return activeTeam ? [activeTeam] : [];
-  }, [activeTeam]);
 
+  console.log(activeTeam, trackedTeams)
   const {
     trackedMatches,
     eventNextMatch,
@@ -50,7 +56,7 @@ export default function GamedayWidget({ event, team, isDivisional }) {
     trackedLastMatch,
   } = useTrackedEvent(matches, trackedTeams);
 
-  const matchContext = activeTeam
+  const matchContext = trackedTeams.length > 0
     ? {
         list: trackedMatches,
         next: trackedNextMatch,
@@ -122,7 +128,7 @@ export default function GamedayWidget({ event, team, isDivisional }) {
 
       {/* LEFT (info) */}
       <div className="shrink-0">
-        <GamedayEventTeamInfo event={eventData} team={activeTeam} teamStatus={teamStatuses[activeTeam]} isDivisional={isDivisional} />
+        <GamedayEventTeamInfo event={eventData} team={trackedTeams} teamStatus={teamStatuses} nextMatch={matchContext.next} lastMatch={matchContext.last} isDivisional={isDivisional} />
       </div>
 
       {/* CENTER (MATCH STRIP CLIPPED ZONE) */}
@@ -156,6 +162,7 @@ export default function GamedayWidget({ event, team, isDivisional }) {
               eventPlayoffType={eventData.playoff_type}
               playoffAlliances={playoffAlliances}
               eventTimezone={eventData?.timezone}
+              team={trackedTeams}
             />
           </div>
           {/* 3. Right fade overlay */}
@@ -203,9 +210,11 @@ export default function GamedayWidget({ event, team, isDivisional }) {
         open={teamModalOpen}
         setOpen={setTeamModalOpen}
         teams={teams}
+        teamsStatuses={teamStatuses}
         playoffAlliances={playoffAlliances}
-        activeTeam={activeTeam}
-        setActiveTeam={setActiveTeam}
+        activeTeam={trackedTeams}
+        addTrackedTeam={addTrackedTeam}
+        removeTrackedTeam={removeTrackedTeam}
       />
     </div>
   );

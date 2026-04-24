@@ -1,10 +1,15 @@
+import Record from "@/components/gameday/teamElements/Record";
+import Rank from "@/components/gameday/teamElements/Rank";
+
 export default function TeamModal({
   open,
   setOpen,
   teams,
+  teamsStatuses,
   playoffAlliances,
   activeTeam,
-  setActiveTeam
+  addTrackedTeam,
+  removeTrackedTeam
 }) {
   if (!open) return null;
 
@@ -13,7 +18,7 @@ export default function TeamModal({
       <div className="bg-neutral-900 w-[90%] max-w-md rounded-lg p-4 max-h-[70vh] overflow-y-auto">
 
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-white font-semibold">Select Team</h2>
+          <h2 className="text-white font-semibold">Select Teams</h2>
 
           <button
             onClick={() => setOpen(false)}
@@ -25,7 +30,7 @@ export default function TeamModal({
 
         <div className="flex flex-col gap-2">
         <button
-        onClick={() => {setActiveTeam(null); setOpen(false)}}
+        onClick={() => {activeTeam.forEach((a) => removeTrackedTeam(a)); setOpen(false)}}
         className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-sm"
         >
         All Teams
@@ -34,11 +39,11 @@ export default function TeamModal({
             <button
               key={t.key}
               onClick={() => {
-                setActiveTeam(t.name);
+                addTrackedTeam(t.picks);
                 setOpen(false);
               }}
               className={`text-left px-3 py-2 rounded transition ${
-                t.key === activeTeam
+                activeTeam.includes(t.picks)
                   ? "bg-white text-black"
                   : "bg-neutral-800 text-white hover:bg-neutral-700"
               }`}
@@ -51,16 +56,16 @@ export default function TeamModal({
             <button
               key={t.key}
               onClick={() => {
-                setActiveTeam(t.key);
-                setOpen(false);
+                if (activeTeam.includes(t.key)) removeTrackedTeam(t.key);
+                else addTrackedTeam(t.key);
               }}
               className={`text-left px-3 py-2 rounded transition ${
-                t.key === activeTeam
+               activeTeam.includes(t.key)
                   ? "bg-white text-black"
                   : "bg-neutral-800 text-white hover:bg-neutral-700"
               }`}
             >
-              {t.team_number} — {t.nickname}
+              {t.team_number} — {t.nickname} <span className="flex gap-2 text-xs"><Rank status={teamsStatuses[t.key]} /> <Record status={teamsStatuses[t.key]} /></span>
             </button>
           ))}
         </div>

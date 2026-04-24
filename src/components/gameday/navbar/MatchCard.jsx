@@ -5,11 +5,11 @@ import { formatEventTime } from "../../../lib/time";
 export default function MatchCard({ match, team, isNext, isLast, playoffAlliances, eventPlayoffType, eventTimezone }) {
     if (!match) return null;
     if (!playoffAlliances) playoffAlliances = [];
-
+    console.log("[Match Card] Team", team)
     const red = match?.alliances?.red?.team_keys || [];
     const blue = match?.alliances?.blue?.team_keys || [];
-    const isTrackedInRed = team && red.includes(team.key);
-    const isTrackedInBlue = team && blue.includes(team.key);
+    const isTrackedInRed = red.some((red)=> team.includes(red));
+    const isTrackedInBlue = blue.some((blue) => team.includes(blue));
 
     const isPlayoff = match.comp_level !== "qm";
     const hasAlliances = playoffAlliances.length > 0
@@ -46,7 +46,7 @@ export default function MatchCard({ match, team, isNext, isLast, playoffAlliance
                     {playoffRedAlliance.name?.replace("Alliance ", "A").trim() || ""}
                 </span>
                 ) : null}
-                {formatAlliance(red, team?.key)}
+                {formatAlliance(red, team)}
                 </div>
                 <div className="text-blue-400">
                 {isPlayoff && playoffBlueAlliance ? (
@@ -54,7 +54,7 @@ export default function MatchCard({ match, team, isNext, isLast, playoffAlliance
                     {playoffBlueAlliance.name?.replace("Alliance ", "A").trim() || ""}
                 </span>
                 ) : null}
-                {formatAlliance(blue, team?.key)}
+                {formatAlliance(blue, team)}
                 </div>
             </div>
         </div>

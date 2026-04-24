@@ -1,12 +1,26 @@
 "use client";
 
 import Record from "@/components/gameday/teamElements/Record";
-import EventInfo from "@/components/gameday/navbar/EventInfo";
 import Rank from "@/components/gameday/teamElements/Rank";
+import EventInfo from "@/components/gameday/navbar/EventInfo";
 import EventLocalTime from "@/components/gameday/navbar/EventLocalTime";
+import { useMemo } from "react";
 
-export default function GamedayEventTeamInfo({ event, team: teamKey, teamStatus, isDivisional }) {
-  const isTeamMode = teamKey && teamStatus;
+export default function GamedayEventTeamInfo({ event, team: teamKey, teamStatus, nextMatch, lastMatch, isDivisional }) {
+  const isTeamMode = teamKey.length > 0 && teamStatus;
+  const activeDisplayTeam = useMemo(() => {
+    if (!teamKey?.length || (!nextMatch && !lastMatch)) return teamKey[0];
+
+    const match = nextMatch || lastMatch
+
+    const teamsInMatch = [
+      ...(match?.alliances?.red?.team_keys || []),
+      ...(match?.alliances?.blue?.team_keys || [])
+    ];
+
+    return teamKey.find(t => teamsInMatch.includes(t)) || teamKey[0];
+  }, [teamKey, nextMatch, lastMatch]);
+  console.log(activeDisplayTeam)
   return (
     <div className="w-full h-full flex flex-row items-stretch gap-2 px-2 py-2 overflow-hidden">
 
@@ -14,16 +28,16 @@ export default function GamedayEventTeamInfo({ event, team: teamKey, teamStatus,
       <div className="flex flex-col justify-center shrink-0">
         {isTeamMode && (
           <div className="text-xs text-white">
-            {teamKey ? teamKey.replace("frc", "Team ") : ""} At
+            {teamKey.map((t) => {return (<span className={activeDisplayTeam === t ? "font-bold underline gap-1" : "gap-1"}>{t.replace("frc", "Team ")} </span>)})} At
           </div>
         )}
 
         <EventInfo event={event} />
 
         {isTeamMode && (
-          <div className="flex gap-1 text-nowrap">
-            <Rank status={teamStatus} team={teamKey} />
-            <Record status={teamStatus} />
+          <div className="flex gap-1 text-nowrap text-sm">
+            <Rank status={teamStatus[activeDisplayTeam]} />
+            <Record status={teamStatus[activeDisplayTeam]} />
           </div>
         )}
 

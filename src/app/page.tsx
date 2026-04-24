@@ -74,7 +74,7 @@ export default function HomePage() {
             <div><span className="text-xs">{dumbDateString(event.start_date)} - {dumbDateString(event.end_date)}</span></div>
           </div>
           <div className="flex max-w-50">
-            <MatchList matches={event.matches} team={null} playoffAlliances={[]} eventTimezone={event.timezone} eventPlayoffType={event.playoff_type} nextMatchKey={null} teamStatus={undefined}/>
+            <MatchList matches={event.matches} team={null} playoffAlliances={[]} eventTimezone={event.timezone} eventPlayoffType={event.playoff_type} nextMatchKey={null} lastMatchKey={undefined} />
           </div>
 
           <div className="flex flex-col gap-2">

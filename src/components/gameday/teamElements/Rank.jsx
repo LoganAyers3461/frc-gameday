@@ -3,7 +3,7 @@
 export default function TeamRank({ status }) {
   if (!status) {
     return (
-      <div className="text-gray-400 text-sm">
+      <div className="text-gray-400">
         No Rank
       </div>
     );
@@ -31,7 +31,7 @@ export default function TeamRank({ status }) {
     const isEliminated = status?.playoff?.status === "eliminated";
 
     return (
-      <div className="text-sm flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <span className="font-semibold">
           {allianceName || "?"}
         </span>
@@ -57,7 +57,7 @@ export default function TeamRank({ status }) {
     const total = status.qual?.num_teams;
 
     return (
-        <div className="font-semibold text-sm">
+        <div className="font-semibold">
           <span className="text-white-300">Rank:</span> {rank ?? "?"} / {total ?? "?"}
         </div>
     );
@@ -66,7 +66,7 @@ export default function TeamRank({ status }) {
   // FALLBACK
   // ------------------------
   return (
-    <div className="text-gray-400 text-sm">
+    <div className="text-gray-400">
       No Rank
     </div>
   );
