@@ -10,7 +10,7 @@ export default function Record({ status }) {
 
   const record = finalsRecord || playoffRecord || qualRecord;
 
-  if (!record) return <span className="text-gray-400">No Matches </span>;
+  if (!record) return <div className="text-gray-400">No Matches </div>;
 
   return (
     <div>

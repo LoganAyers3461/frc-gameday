@@ -28,7 +28,7 @@ export default function GamedayEventTeamInfo({ event, team: teamKey, teamStatus,
       <div className="flex flex-col justify-center shrink-0">
         {isTeamMode && (
           <div className="text-xs text-white">
-            {teamKey.map((t) => {return (<span className={activeDisplayTeam === t ? "font-bold underline gap-1" : "gap-1"}>{t.replace("frc", "Team ")} </span>)})} At
+            {teamKey.map((t) => {return (<span key={t} className={activeDisplayTeam === t ? "font-bold underline gap-1" : "gap-1"}>{t.replace("frc", "Team ")} </span>)})} At
           </div>
         )}
 

@@ -69,7 +69,7 @@ export default function TeamModal({
                   : "bg-neutral-800 text-white hover:bg-neutral-700"
               }`}
             >
-              {t.team_number} — {t.nickname} <span className="flex gap-2 text-xs"><Rank status={teamsStatuses[t.key]} /> <Record status={teamsStatuses[t.key]} /></span>
+              {t.team_number} — {t.nickname} <div className="flex gap-2 text-xs"><Rank status={teamsStatuses[t.key]} /> <Record status={teamsStatuses[t.key]} /></div>
             </button>
           ))}
         </div>
