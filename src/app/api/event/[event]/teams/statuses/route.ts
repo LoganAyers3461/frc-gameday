@@ -1,3 +1,4 @@
+import { getEventData } from "@/lib/tbaEventCache";
 import { TBA } from "@/lib/tbaService";
 export const revalidate = 30;
 export async function GET(
@@ -6,7 +7,10 @@ export async function GET(
 ) {
   const { event: event } = await params;
 
-  const data = await TBA.getEventTeamsStatuses(event);
+  const data = await getEventData(event, "teams:statuses", () =>
+    TBA.getEventTeamsStatuses(event)
+  );
+
 
   return Response.json(data);
 }
