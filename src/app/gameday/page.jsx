@@ -87,7 +87,7 @@ export default function Event({ searchParams }) {
           key={event.key}
           event={event.key}
           initialTeams={teams}
-          eventName={event.short_name || event.name || event.key}
+          eventName={(data) => data || "Loading"}
           isDivisional={false}
         />
       ))}

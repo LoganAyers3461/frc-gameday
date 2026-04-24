@@ -1,47 +1,98 @@
-import { TBA } from "@/lib/tbaService";
-import MultiviewClient from "../../../../components/multiview/MultiviewClient";
-import GamedayWidget from "@/components/gameday/GamedayWidget";
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+"use client";
 
+import { useEffect, useState } from "react";
+import MultiviewClient from "@/components/multiview/MultiviewClient";
+import GamedayWidget from "@/components/gameday/GamedayWidget";
+
+// ==============================
+// HELPERS
+// ==============================
 function normalizeTeams(param) {
   if (!param) return [];
   return Array.isArray(param) ? param : [param];
 }
 
-export default async function DivisionalEvent({ params, searchParams }) {
-  const { parentEvent } = await params;
+// ==============================
+// COMPONENT
+// ==============================
+export default function DivisionalEvent({ params, searchParams }) {
+  const [parent, setParent] = useState(null);
+  const [divisionKeys, setDivisionKeys] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [parentEvent, setParentEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const sp = await searchParams;
-  const teams = normalizeTeams(sp.team);
+  // ==============================
+  // UNWRAP PARAMS + LOAD DATA
+  // ==============================
+  useEffect(() => {
+    let cancelled = false;
 
-  const parent = await TBA.getEvent(parentEvent);
-  const divisionKeys = parent?.division_keys || [];
+    async function init() {
+      try {
+        setLoading(true);
 
-  const divisions = [];
-  for (const key of divisionKeys) {
-    const res = await fetch(`${baseUrl}/api/event/${key}`);
-    const division = await res.json();
-    divisions.push(division);
+        // ✅ unwrap both promises
+        const resolvedParams = await params;
+        const resolvedSearchParams = await searchParams;
+
+        const parentKey = resolvedParams?.parentEvent;
+        const parsedTeams = normalizeTeams(resolvedSearchParams?.team);
+
+        if (cancelled) return;
+
+        setTeams(parsedTeams);
+        setParentEvent(parentKey);
+
+        // fetch parent event
+        const res = await fetch(`/api/event/${parentKey}`);
+        const parentData = await res.json();
+
+        if (cancelled) return;
+
+        setParent(parentData);
+        setDivisionKeys(parentData?.division_keys || []);
+      } catch (err) {
+        console.error("Failed to load divisional event:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    init();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params, searchParams]);
+
+  // ==============================
+  // LOADING
+  // ==============================
+  if (loading || !parentEvent) {
+    return <div className="p-4 text-white">Loading events...</div>;
   }
 
+  // ==============================
+  // RENDER
+  // ==============================
   return (
     <MultiviewClient isDivisional={true} parentEvent={parent}>
       {/* Divisions */}
-      {divisions.map((division) => (
+      {divisionKeys.map((key) => (
         <GamedayWidget
-          key={division.key}
-          event={division.key}
+          key={key}
+          event={key}
           initialTeams={teams}
-          eventName={division.short_name}
           isDivisional={true}
         />
       ))}
-      {/* Parent event */}
+
+      {/* Parent */}
       <GamedayWidget
-        key={parent.key}
-        event={parent.key}
+        key={parentEvent}
+        event={parentEvent}
         initialTeams={teams}
-        eventName={parent.short_name}
         isDivisional={true}
       />
     </MultiviewClient>
