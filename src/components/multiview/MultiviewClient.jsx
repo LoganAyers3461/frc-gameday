@@ -229,12 +229,12 @@ export default function MultiviewClient({ isDivisional, parentEvent, children = 
         {/* CONTROL BAR */}
         <div className="flex justify-between items-center px-2 h-10 border-b border-neutral-800">
 
-          <div className="text-sm flex">
+          <div className="text-sm flex items-center">
             <button
-              className="px-3 py-1 gap-2 bg-neutral-800 hover:bg-neutral-700 rounded text-sm"
+              className="px-3 py-1 bg-neutral-800 hover:bg-neutral-700 rounded text-sm"
               onClick={() => router.push("/")}
             >
-              <HomeIcon className="w-5 h-5" />
+              <HomeIcon className="w-4 h-5" />
             </button>
             {isDivisional && parentEvent ? (
               <div className="flex flex-col pl-2">
