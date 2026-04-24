@@ -44,7 +44,7 @@ export default function GamedayWidget({ event, initialTeams = [], isDivisional }
   const {alliances: playoffAlliances, reload:reloadAlliances} = usePlayoffAlliances(event);
 
 
-  console.log(trackedTeams)
+  //console.log(trackedTeams)
   const {
     trackedMatches,
     eventNextMatch,
