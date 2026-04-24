@@ -28,7 +28,7 @@ export default async function DivisionalEvent({ params, searchParams }) {
         <GamedayWidget
           key={event.key}
           event={event.key}
-          team={teams[0]}
+          initialTeams={teams}
           eventName={event.short_name || event.name || event.key}
           isDivisional={false}
         />

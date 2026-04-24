@@ -13,7 +13,6 @@ import { VideoCameraIcon } from "@heroicons/react/24/outline";
 import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline";
 
-import { useGameday } from "@/components/gameday/hooks/useGameday";
 import { buildStreams } from "@/lib/gameday/buildStreams";
 import { useStreamController } from "@/components/gameday/hooks/useStreamController";
 import { useMatches } from "@/components/gameday/hooks/useMatches"
@@ -24,17 +23,15 @@ import { useTrackedEvent } from "@/components/gameday/hooks/useTracking"
 import { useTeamsStatuses } from "@/components/gameday/hooks/useTeamsStatuses";
 
 import TeamModal from "@/components/gameday/teamElements/TeamModal";
-import LastMatch from "@/components/gameday/teamElements/LastMatch";
-import NextMatch from "@/components/gameday/teamElements/NextMatch";
 
-export default function GamedayWidget({ event, team, isDivisional }) {
+export default function GamedayWidget({ event, initialTeams = [], isDivisional }) {
   const {event:eventData} = useEvent(event);
 
   const {teams: teams} = useTeams(event);
-  const {teamsStatuses: teamStatuses} = useTeamsStatuses(event);
-  const [activeTeam, setActiveTeam] = useState(team);
+  const {teamsStatuses: teamStatuses, reload:reloadStatuses} = useTeamsStatuses(event);
+  
 
-  const [trackedTeams, setTrackedTeams] = useState([]);
+  const [trackedTeams, setTrackedTeams] = useState(initialTeams);
   function addTrackedTeam(teamKey) {
     setTrackedTeams((prev) => [...prev, teamKey]);
   }
@@ -42,12 +39,12 @@ export default function GamedayWidget({ event, team, isDivisional }) {
     setTrackedTeams((prev) => prev.filter((t) => t !== teamKey));
   }
 
-  const { matches } = useMatches(event);
+  const { matches, reload:reloadMatches } = useMatches(event);
 
-  const {alliances: playoffAlliances} = usePlayoffAlliances(event);
+  const {alliances: playoffAlliances, reload:reloadAlliances} = usePlayoffAlliances(event);
 
 
-  console.log(activeTeam, trackedTeams)
+  console.log(trackedTeams)
   const {
     trackedMatches,
     eventNextMatch,
@@ -101,6 +98,11 @@ export default function GamedayWidget({ event, team, isDivisional }) {
     );
   }
 
+  function reloadDataSources() {
+    reloadMatches();
+    reloadAlliances();
+    reloadStatuses();
+  }
 
   return (
     <div className="w-full h-full flex flex-col bg-black text-white overflow-hidden">
@@ -180,7 +182,7 @@ export default function GamedayWidget({ event, team, isDivisional }) {
               <UserGroupIcon className="w-4 h-5 text-white" />
             </button>
             
-            <RefreshButton onRefresh={null} />
+            <RefreshButton onRefresh={() => reloadDataSources()} />
 
             <button
               onClick={() => setModalOpen(true)}

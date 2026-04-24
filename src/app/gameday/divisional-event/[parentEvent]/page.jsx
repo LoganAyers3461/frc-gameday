@@ -29,7 +29,7 @@ export default async function DivisionalEvent({ params, searchParams }) {
         <GamedayWidget
           key={division.key}
           event={division.key}
-          team={teams[0]}
+          initialTeams={teams}
           eventName={division.short_name}
           isDivisional={true}
         />
@@ -38,7 +38,7 @@ export default async function DivisionalEvent({ params, searchParams }) {
       <GamedayWidget
         key={parent.key}
         event={parent.key}
-        team={teams[0]}
+        initialTeams={teams}
         eventName={parent.short_name}
         isDivisional={true}
       />
