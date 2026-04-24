@@ -7,11 +7,12 @@ function makeKey(event: string, type: string) {
 
 // CORE IDEA: cache per event + data type
 export const getEventData = (event: string, type: string, revalidate:number = 30, fn: () => Promise<any>) => {
-  return unstable_cache(
-    fn,
-    [makeKey(event, type)],
-    {
-      revalidate: revalidate,
-    }
-  )();
+    const key = makeKey(event, type)
+    return unstable_cache(
+        async () => {
+            console.log("Unstable Cache MISS:", key);
+            return fn();
+        }, [key],
+        { revalidate }
+    )();
 };
