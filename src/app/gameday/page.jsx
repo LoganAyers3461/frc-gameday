@@ -1,4 +1,5 @@
-import { TBA } from "@/lib/tbaService";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 import MultiviewClient from "@/components/multiview/MultiviewClient";
 import GamedayWidget from "@/components/gameday/GamedayWidget";
 
@@ -15,9 +16,8 @@ export default async function DivisionalEvent({ params, searchParams }) {
   const eventKeys = normalizeParams(sp.event)
   const events = [];
   for (const key of eventKeys) {
-    const event = await TBA.getEvent(key);
-    const eventTeams = await TBA.getTeamsAtEvent(key);
-    event['teams'] = eventTeams;
+    const res = await fetch(`${baseUrl}/api/event/${key}`);
+    const event = await res.json();
     events.push(event);
   }
 

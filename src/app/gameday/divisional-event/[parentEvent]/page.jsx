@@ -1,6 +1,7 @@
 import { TBA } from "@/lib/tbaService";
 import MultiviewClient from "../../../../components/multiview/MultiviewClient";
 import GamedayWidget from "@/components/gameday/GamedayWidget";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 function normalizeTeams(param) {
   if (!param) return [];
@@ -18,7 +19,8 @@ export default async function DivisionalEvent({ params, searchParams }) {
 
   const divisions = [];
   for (const key of divisionKeys) {
-    const division = await TBA.getEvent(key);
+    const res = await fetch(`${baseUrl}/api/event/${key}`);
+    const division = await res.json();
     divisions.push(division);
   }
 
