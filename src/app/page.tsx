@@ -95,7 +95,7 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <button className="bg-neutral-800 w-full hover:bg-zinc-800 rounded p-2" onClick={()=> router.push(`/gameday/${event.key}`)}>Watch {hasDivisions ? "Event" : "Now"}</button>
+            <button className="bg-neutral-800 w-full hover:bg-zinc-800 rounded p-2" onClick={()=> router.push(`/gameday?event=${event.key}`)}>Watch {hasDivisions ? "Event" : "Now"}</button>
             { hasDivisions ? 
             (<button className="bg-neutral-800 w-full hover:bg-zinc-800 rounded p-2" onClick={()=> router.push(`/gameday/divisional-event/${event.key}`)}>Watch Divisions</button>) : 
             (
