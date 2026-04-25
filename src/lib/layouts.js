@@ -2,7 +2,7 @@
 
 export const LAYOUTS = {
   single: {
-    name: "Simple",
+    name: "Single",
     slots: [
       { x: 0, y: 0, w: 100, h: 100 },
     ],
@@ -134,21 +134,40 @@ export const LAYOUTS = {
     ],
   },
   onePlusEight: {
-    name: "1 + 8",
+    name: "Focus (1 + 8)",
     slots: [
-        //main
-        { x: 25, y:0, w:50, h:100},
-        //left column
-        { x: 0, y: 0, w:25, h:25 },
-        { x: 0, y: 25, w:25, h:25 },
-        { x: 0, y: 50, w:25, h:25 },
-        { x: 0, y: 75, w:25, h:25 },
-        //right column
-        { x: 75, y: 0, w:25, h:25 },
-        { x: 75, y: 25, w:25, h:25 },
-        { x: 75, y: 50, w:25, h:25 },
-        { x: 75, y: 75, w:25, h:25 },
-    ]
+      // Main (left side, 2/3 width)
+      { x: 0, y: 0, w: 66.666, h: 100 },
+
+      // Right column (split into 4 rows, 2 columns)
+      { x: 66.666, y: 0,    w: 16.666, h: 25 },
+      { x: 83.333, y: 0,    w: 16.666, h: 25 },
+
+      { x: 66.666, y: 25,   w: 16.666, h: 25 },
+      { x: 83.333, y: 25,   w: 16.666, h: 25 },
+
+      { x: 66.666, y: 50,   w: 16.666, h: 25 },
+      { x: 83.333, y: 50,   w: 16.666, h: 25 },
+
+      { x: 66.666, y: 75,   w: 16.666, h: 25 },
+      { x: 83.333, y: 75,   w: 16.666, h: 25 },
+    ],
+  },
+  nineGrid: {
+    name: "3x3 Grid",
+    slots: [
+      { x: 0,   y: 0,   w: 33.333, h: 33.333 },
+      { x: 33.333, y: 0,   w: 33.333, h: 33.333 },
+      { x: 66.666, y: 0,   w: 33.333, h: 33.333 },
+
+      { x: 0,   y: 33.333, w: 33.333, h: 33.333 },
+      { x: 33.333, y: 33.333, w: 33.333, h: 33.333 },
+      { x: 66.666, y: 33.333, w: 33.333, h: 33.333 },
+
+      { x: 0,   y: 66.666, w: 33.333, h: 33.333 },
+      { x: 33.333, y: 66.666, w: 33.333, h: 33.333 },
+      { x: 66.666, y: 66.666, w: 33.333, h: 33.333 },
+    ],
   }
 };
 
@@ -161,5 +180,28 @@ export function pickLayout(count) {
   if (count <= 6) return "hex";
   if (count <= 7) return "onePlusSix";
   if (count <= 8) return "octo";
+  if (count <= 9) return "nineGrid";
+  return "nineGrid";
+}
+
+export function pickHighlightLayout(count) {
+  if (count <= 1) return "single";
+
+  if (count === 2) return "verticalSplit";
+
+  if (count === 3) return "onePlusTwo";
+
+  if (count === 4) return "onePlusThree";
+
+  if (count === 5) return "twoPlusThree"; 
+
+  if (count === 6) return "twoPlusThree";
+
+  if (count === 7) return "twoPlusSix"; 
+
+  if (count === 8) return "twoPlusSix"; 
+
+  if (count >= 9) return "onePlusEight";
+
   return "onePlusEight";
 }

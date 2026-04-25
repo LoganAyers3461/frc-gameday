@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { LAYOUTS, pickLayout } from "@/lib/layouts";
+import { LAYOUTS, pickLayout, pickHighlightLayout } from "@/lib/layouts";
 import React from "react";
 import EventLocalTime from "../gameday/navbar/EventLocalTime";
 import EventInfo from "../gameday/navbar/EventInfo";
@@ -37,7 +37,10 @@ export default function MultiviewClient({
 }) {
   const router = useRouter();
 
-  const childArray = useMemo(() => React.Children.toArray(children), [children]);
+  const childArray = useMemo(
+    () => React.Children.toArray(children),
+    [children]
+  );
 
   // ==============================
   // LABEL SYSTEM
@@ -52,37 +55,47 @@ export default function MultiviewClient({
   }
 
   // ==============================
-  // LAYOUT
+  // LAYOUT STATE (SIMPLIFIED MODEL)
   // ==============================
-  const [manualOverride, setManualOverride] = useState(false);
   const [selectedLayout, setSelectedLayout] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [baseLayout, setBaseLayout] = useState(null);
   const [activeChildIndex, setActiveChildIndex] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const autoLayout = pickLayout(childArray.length || 1);
-  const layoutKey = manualOverride ? selectedLayout : autoLayout;
+  const layoutSelectValue = childArray.length || 1;
+  const autoLayout = pickLayout(layoutSelectValue);
+
+  // FINAL SINGLE SOURCE OF TRUTH
+  const layoutKey = selectedLayout ?? autoLayout;
   const layout = LAYOUTS[layoutKey];
 
   // ==============================
-  // SLOT ORDER
+  // HOME ORDER
   // ==============================
-  const [slotOrder, setSlotOrder] = useState(() =>
-    layout.slots.map((_, i) => i)
-  );
-
-  const [homeSlotOrder, setHomeSlotOrder] = useState(() =>
+  const [homeOrder, setHomeOrder] = useState(() =>
     childArray.map((_, i) => i)
   );
 
   useEffect(() => {
-    setSlotOrder(layout.slots.map((_, i) => i));
-  }, [layoutKey, childArray.length]);
+    setHomeOrder(childArray.map((_, i) => i));
+  }, [childArray.length]);
 
-  useEffect(() => {
-    const base = childArray.map((_, i) => i);
-    setSlotOrder(base);
-    setHomeSlotOrder(base);
-  }, [layoutKey]);
+  // ==============================
+  // DERIVED SLOT ORDER
+  // ==============================
+  const slotOrder = useMemo(() => {
+    if (activeChildIndex == null) return homeOrder;
+
+    const next = [...homeOrder];
+    const index = next.indexOf(activeChildIndex);
+
+    if (index > -1) {
+      next.splice(index, 1);
+      next.unshift(activeChildIndex);
+    }
+
+    return next;
+  }, [activeChildIndex, homeOrder]);
 
   // ==============================
   // SIGNAL LISTENER
@@ -95,22 +108,12 @@ export default function MultiviewClient({
 
       if (childIndex === -1) return;
 
-      const slotIndex = slotOrder.findIndex((i) => i === childIndex);
-      if (slotIndex !== -1) moveToPrimary(slotIndex);
+      setActiveChildIndex(childIndex);
+
+      setBaseLayout(selectedLayout ?? autoLayout);
+      setSelectedLayout(pickHighlightLayout(childArray.length));
     }
   });
-
-  // ==============================
-  // HELPERS
-  // ==============================
-  function moveToPrimary(index) {
-    setSlotOrder((prev) => {
-      const next = [...prev];
-      const [item] = next.splice(index, 1);
-      next.unshift(item);
-      return next;
-    });
-  }
 
   // ==============================
   // PiP (unchanged)
@@ -188,7 +191,7 @@ export default function MultiviewClient({
             )}
           </div>
 
-          {/* BUTTONS */}
+          {/* STREAM BUTTONS */}
           <div className="flex gap-1">
             {childArray.map((_, childIndex) => {
               const isActive = childIndex === activeChildIndex;
@@ -200,21 +203,34 @@ export default function MultiviewClient({
                 <button
                   key={childIndex}
                   onClick={() => {
-                    if (isActive) {
-                      setSlotOrder(homeSlotOrder);
+                    const isSame = childIndex === activeChildIndex;
+
+                    // -------------------------
+                    // UNHIGHLIGHT
+                    // -------------------------
+                    if (isSame) {
                       setActiveChildIndex(null);
+
+                      if (baseLayout) {
+                        setSelectedLayout(baseLayout);
+                        setBaseLayout(null);
+                      } else {
+                        setSelectedLayout(null);
+                      }
+
                       return;
                     }
 
+                    // -------------------------
+                    // ENTER HIGHLIGHT
+                    // -------------------------
                     setActiveChildIndex(childIndex);
 
-                    const slotIndex = slotOrder.findIndex(
-                      (i) => i === childIndex
-                    );
+                    setBaseLayout(selectedLayout ?? autoLayout);
 
-                    if (slotIndex !== -1) {
-                      moveToPrimary(slotIndex);
-                    }
+                    setSelectedLayout(
+                      pickHighlightLayout(layout.slots.length)
+                    );
                   }}
                   className={`
                     px-2 py-1 text-xs rounded transition
@@ -240,7 +256,10 @@ export default function MultiviewClient({
         {/* GRID */}
         <div className="relative flex-1">
           {childArray.map((child, childIndex) => {
-            const slotIndex = slotOrder.findIndex((i) => i === childIndex);
+            const slotIndex = slotOrder.findIndex(
+              (i) => i === childIndex
+            );
+
             const slotLayout = layout.slots[slotIndex];
 
             if (!slotLayout) return null;
@@ -274,12 +293,13 @@ export default function MultiviewClient({
 
           <button
             onClick={() => {
-              setManualOverride(false);
               setSelectedLayout(null);
+              setBaseLayout(null);
+              setActiveChildIndex(null);
             }}
             className="px-2 py-1 bg-green-600 rounded text-sm mt-2"
           >
-            Auto Layout ({autoLayout})
+            Auto Layout ({LAYOUTS[autoLayout].name})
           </button>
 
           <div className="h-px bg-neutral-700 my-2" />
@@ -287,10 +307,7 @@ export default function MultiviewClient({
           {Object.entries(LAYOUTS).map(([key, value]) => (
             <button
               key={key}
-              onClick={() => {
-                setSelectedLayout(key);
-                setManualOverride(true);
-              }}
+              onClick={() => setSelectedLayout(key)}
               className={`
                 block w-full text-left px-2 py-1 rounded text-sm
                 hover:bg-neutral-800
