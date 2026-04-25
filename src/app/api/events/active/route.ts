@@ -71,11 +71,10 @@ export async function GET() {
     return (order[a.state] - order[b.state]);
   });
   enriched.sort( (a,b) => {
-    return getEventWeight(b) - getEventWeight(a)
-  });
-  enriched.sort( (a,b) => {
     return (new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
   });
-
+  enriched.sort( (a,b) => {
+    return getEventWeight(b) - getEventWeight(a)
+  });
   return Response.json(enriched);
 }
