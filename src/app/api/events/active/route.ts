@@ -35,11 +35,23 @@ function getEventWeight(event: any): number {
 
 export async function GET() {
     const year = new Date().getFullYear();
-
     const events:any = await TBA.getEvents(year);
+    const filteredEvents = events.filter((e: any) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // normalize to midnight
+
+      const [sy, sm, sd] = e.start_date.split("-").map(Number);
+      const [ey, em, ed] = e.end_date.split("-").map(Number);
+
+      const start = new Date(sy, sm - 1, sd);
+      const end = new Date(ey, em - 1, ed);
+
+      // event is ongoing or in the future
+      return start > today;
+    });
 
     const enriched = await Promise.all(
-        events.map(async (event: any) => {
+        filteredEvents.map(async (event: any) => {
             const matches:any = await TBA.getEventMatchesSimple(event.key);
 
             const hasMatches = matches.length > 0;
