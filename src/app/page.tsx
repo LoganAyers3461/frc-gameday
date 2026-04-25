@@ -71,7 +71,7 @@ export default function HomePage() {
           <div>
             <div className="font-semibold">{event.name.replace("- FIRST Robotics Competition", "").replace("Presented", "presented").split("presented by")[0]}</div>
             <div><span className="text-xs opacity-70">{event.event_type_string}</span></div>
-            <div><span className="text-xs">{dumbDateString(event.start_date)} - {dumbDateString(event.end_date)}</span></div>
+            <div><span className="text-xs">{dumbDateString(event.start_date)} - {dumbDateString(event.end_date)} |  {event.city}, {event.state_prov} {event.country}</span></div>
           </div>
           <div className="flex-1 min-w-0 overflow-hidden px-1 gap-2">
             <div className="relative w-full overflow-hidden">
