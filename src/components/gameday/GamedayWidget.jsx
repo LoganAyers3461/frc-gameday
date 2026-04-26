@@ -167,7 +167,7 @@ export default function GamedayWidget({
 
         {/* CHAT */}
         <div
-          className={`w-[15%] border-l border-neutral-800 transition-all duration-200 ${
+          className={`w-[15vw] border-l border-neutral-800 transition-all duration-200 ${
             chatOpen ? "flex" : "hidden"
           }`}
         >
