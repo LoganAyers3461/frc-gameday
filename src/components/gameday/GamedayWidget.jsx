@@ -46,8 +46,8 @@ export default function GamedayWidget({
   // REPORT LABEL TO PARENT
   // ==============================
   useEffect(() => {
-    if (eventData?.short_name && registerLabel) {
-      registerLabel(eventData.short_name);
+    if (eventData && registerLabel) {
+      registerLabel(eventData?.short_name || eventData?.name || eventData?.key);
     }
   }, [eventData?.short_name, registerLabel]);
 
