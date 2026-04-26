@@ -218,7 +218,7 @@ export default function MultiviewClient({
                     bg-neutral-800 hover:bg-neutral-700
                     truncate
                     ${isActive ? "ring-2 ring-white" : ""}
-                    ${isDimmed ? "opacity-50" : "opacity-100"}
+                    ${isDimmed ? "opacity-80" : "opacity-100"}
                   `}
                 >
                   {label.replace("- FIRST Robotics Competition", "")}
