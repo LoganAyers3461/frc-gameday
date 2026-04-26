@@ -124,7 +124,26 @@ export const LAYOUTS = {
       { x: 75, y: 50, w: 25, h: 50 },
     ],
   },
+  onePlusEight: {
+    name: "1 + 8",
+    slots: [
+      // Primary focus
+      { x: 0, y: 0, w: 70, h: 100 },
 
+      // Right side grid (2 columns × 4 rows)
+      { x: 70, y: 0,  w: 15, h: 25 },
+      { x: 85, y: 0,  w: 15, h: 25 },
+
+      { x: 70, y: 25, w: 15, h: 25 },
+      { x: 85, y: 25, w: 15, h: 25 },
+
+      { x: 70, y: 50, w: 15, h: 25 },
+      { x: 85, y: 50, w: 15, h: 25 },
+
+      { x: 70, y: 75, w: 15, h: 25 },
+      { x: 85, y: 75, w: 15, h: 25 },
+    ],
+  },
   nineGrid: {
     name: "Nono-view",
     slots: [
@@ -160,6 +179,7 @@ export function pickHighlightLayout(count) {
   if (count === 3) return "onePlusTwo";
   if (count === 4) return "onePlusThree";
   if (count === 5) return "twoPlusThree";
-  if (count <= 8) return "twoPlusSix";
+  if (count === 8) return "onePlusEight";
+  if (count === 9) return "onePlusEight";
   return "onePlusSix";
 }
