@@ -215,10 +215,10 @@ export default function MultiviewClient({
                   }}
                   className={`
                     px-2 py-1 text-xs rounded transition
-                    bg-neutral-800 hover:bg-neutral-700
+                    hover:bg-neutral-700
                     truncate
                     ${isActive ? "ring-2 ring-white" : ""}
-                    ${isDimmed ? "opacity-80" : "opacity-100"}
+                    ${isDimmed ? "opacity-60 bg-gray-800" : "opacity-100 bg-neutral-800"}
                   `}
                 >
                   {label.replace("- FIRST Robotics Competition", "")}
