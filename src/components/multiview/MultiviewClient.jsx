@@ -174,7 +174,7 @@ export default function MultiviewClient({
 
           {/* CENTER: STREAM BUTTONS (FIXED VISUAL STATE ONLY) */}
           <div className="flex gap-1">
-            {childArray.map((_, childIndex) => {
+            {homeOrder.map((childIndex) => {
               const isActive = childIndex === activeChildIndex;
 
               const label =
