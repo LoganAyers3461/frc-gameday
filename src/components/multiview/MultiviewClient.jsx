@@ -96,6 +96,14 @@ export default function MultiviewClient({
     return next;
   }, [activeChildIndex, homeOrder]);
 
+  const visibleKeys = useMemo(() => {
+    return slotOrder.slice(0, layout.slots.length);
+  }, [slotOrder, layout.slots.length]);
+
+  const isOffScreen = (childIndex) => {
+    return !visibleKeys.includes(childIndex);
+  };
+
   // ==============================
   // SIGNAL LISTENER (UNCHANGED)
   // ==============================
@@ -176,7 +184,8 @@ export default function MultiviewClient({
           <div className="flex gap-1">
             {homeOrder.map((childIndex) => {
               const isActive = childIndex === activeChildIndex;
-
+              const layoutCount = layout.slots.length;
+              const isDimmed = isOffScreen(childIndex);
               const label =
                 labels[childIndex] || `Stream ${childIndex + 1}`;
 
@@ -201,7 +210,7 @@ export default function MultiviewClient({
                     setActiveChildIndex(childIndex);
                     setBaseLayout(selectedLayout ?? autoLayout);
                     setSelectedLayout(
-                      pickHighlightLayout(layout.slots.length)
+                      pickHighlightLayout(isDimmed ? layout.slots.length + 1 : layout.slots.length)
                     );
                   }}
                   className={`
@@ -209,6 +218,7 @@ export default function MultiviewClient({
                     bg-neutral-800 hover:bg-neutral-700
                     truncate
                     ${isActive ? "ring-2 ring-white" : ""}
+                    ${isDimmed ? "opacity-50" : "opacity-100"}
                   `}
                 >
                   {label.replace("- FIRST Robotics Competition", "")}
