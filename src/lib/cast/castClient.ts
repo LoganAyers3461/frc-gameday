@@ -1,20 +1,24 @@
+// /lib/cast/castClient.ts
+
 let session: any = null;
 
-export async function startCastSession() {
-  const context = (window as any).cast.framework.CastContext.getInstance();
+export function setCastSession(s: any) {
+  session = s;
+}
 
-  context.setOptions({
-    receiverApplicationId: process.env.NEXT_PUBLIC_CAST_APP_ID,
-    autoJoinPolicy: (window as any).chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
-  });
-
-  session = await context.requestSession();
-
+export function getCastSession() {
   return session;
 }
 
-export function sendCastState(state: any) {
-  if (!session) return;
+export function sendCastMessage(namespace: string, payload: any) {
+  if (!session) {
+    console.warn("No Cast session available");
+    return;
+  }
 
-  session.sendMessage("urn:x-cast:frc.multiview", state);
+  try {
+    session.sendMessage(namespace, payload);
+  } catch (e) {
+    console.error("Cast sendMessage failed:", e);
+  }
 }

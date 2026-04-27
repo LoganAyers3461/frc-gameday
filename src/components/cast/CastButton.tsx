@@ -1,28 +1,40 @@
 "use client";
 
-import { startCastSession } from "@/lib/cast/castClient";
+import { useCastSession } from "@/lib/cast/useCastSession";
+import { sendCastMessage } from "@/lib/cast/castClient";
 
 export default function CastButton() {
-  const handleCast = async () => {
-    const chrome = (window as any).chrome;
-    try {
-      if (!chrome?.cast) {
-        alert("Cast not available in this browser (use Chrome)");
-        return;
-      }
+  const { state, startCast, endCast } = useCastSession();
 
-      await startCastSession();
-    } catch (err) {
-      console.error("Cast failed:", err);
+  const handleClick = async () => {
+    if (state === "connected") {
+      endCast();
+      return;
+    }
+
+    try {
+      await startCast();
+
+      // optional handshake message
+      sendCastMessage("urn:x-cast:frc.multiview", {
+        type: "init",
+        source: "sender",
+      });
+    } catch (e) {
+      console.error("Cast failed:", e);
     }
   };
 
   return (
     <button
-      onClick={handleCast}
-      className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm"
+      onClick={handleClick}
+      className="px-3 py-1 bg-neutral-800 rounded hover:bg-neutral-700"
     >
-      Cast
+      {state === "connected"
+        ? "Stop Casting"
+        : state === "connecting"
+        ? "Connecting..."
+        : "Cast"}
     </button>
   );
 }
