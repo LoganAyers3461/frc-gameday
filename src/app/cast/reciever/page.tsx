@@ -32,6 +32,7 @@ export default function CastReceiverPage() {
 
   return (
     <div className="w-screen h-screen bg-black text-white">
+        <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
       <div className="p-4">
         <h1 className="text-xl font-bold">FieldView Receiver</h1>
 

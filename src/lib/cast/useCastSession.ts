@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { setCastSession } from "@/lib/cast/castClient";
-
+const appId = process.env.NEXT_PUBLIC_CAST_APP_ID;
+//console.log("CAST APP ID:", appId);
 type CastState =
   | "idle"
   | "available"
@@ -29,8 +30,7 @@ export function useCastSession() {
     contextRef.current = context;
 
     context.setOptions({
-      receiverApplicationId:
-        process.env.NEXT_PUBLIC_CAST_APP_ID,
+      receiverApplicationId: appId,
       autoJoinPolicy:
         (window as any).chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
     });
