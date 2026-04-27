@@ -2,14 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { setCastSession } from "@/lib/cast/castClient";
+
 const appId = process.env.NEXT_PUBLIC_CAST_APP_ID;
-//console.log("CAST APP ID:", appId);
-type CastState =
-  | "idle"
-  | "available"
-  | "connecting"
-  | "connected"
-  | "error";
+
+type CastState = "idle" | "available" | "connecting" | "connected" | "error";
 
 export function useCastSession() {
   const sessionRef = useRef<any>(null);
@@ -20,70 +16,97 @@ export function useCastSession() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const cast = (window as any).cast;
-    if (!cast?.framework) {
-      setState("idle");
-      return;
-    }
+    let mounted = true;
 
-    const context = cast.framework.CastContext.getInstance();
-    contextRef.current = context;
+    const initCast = () => {
+      const cast = (window as any).cast;
 
-    context.setOptions({
-      receiverApplicationId: appId,
-      autoJoinPolicy:
-        (window as any).chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
-    });
+      if (!cast?.framework) return false;
 
-    const onSessionChange = (e: any) => {
-      const session = context.getCurrentSession();
-      sessionRef.current = session;
-      setCastSession(session);
+      const context = cast.framework.CastContext.getInstance();
+      contextRef.current = context;
 
-      switch (e.sessionState) {
-        case "SESSION_STARTED":
-          setState("connected");
-          break;
+      context.setOptions({
+        receiverApplicationId: appId,
+        autoJoinPolicy: (window as any).chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
+      });
 
-        case "SESSION_STARTING":
-          setState("connecting");
-          break;
+      const onSessionChange = (e: any) => {
+        const session = context.getCurrentSession();
+        sessionRef.current = session;
+        setCastSession(session);
 
-        case "SESSION_START_FAILED":
-          setState("error");
-          break;
+        const SessionState = cast.framework.SessionState;
 
-        case "NO_SESSION":
-          setState("available");
-          sessionRef.current = null;
-          setCastSession(null);
-          break;
-      }
-    };
+        switch (e.sessionState) {
+          case SessionState.SESSION_STARTED:
+          case SessionState.SESSION_RESUMED:
+            setState("connected");
+            break;
 
-    context.addEventListener(
-      cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
-      onSessionChange
-    );
+          case SessionState.SESSION_STARTING:
+            setState("connecting");
+            break;
 
-    setState("available");
+          case SessionState.SESSION_START_FAILED:
+          case SessionState.SESSION_ENDED:
+            setState("available");
+            sessionRef.current = null;
+            setCastSession(null);
+            break;
 
-    return () => {
-      context.removeEventListener(
+          default:
+            setState("available");
+        }
+      };
+
+      context.addEventListener(
         cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
         onSessionChange
       );
+
+      setState("available");
+
+      return true;
+    };
+
+    // retry until Cast exists (important on Vercel / fast hydration)
+    const interval = setInterval(() => {
+      if (!mounted) return;
+
+      const success = initCast();
+      if (success) clearInterval(interval);
+    }, 200);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+
+      const cast = (window as any).cast;
+      const context = contextRef.current;
+
+      if (cast?.framework && context) {
+        context.removeEventListener(
+          cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+          () => {}
+        );
+      }
     };
   }, []);
 
   const startCast = useCallback(async () => {
     try {
-      if (!contextRef.current) return;
+      const context = contextRef.current;
+      const cast = (window as any).cast;
+
+      if (!context || !cast?.framework) {
+        console.warn("Cast not ready yet");
+        return;
+      }
 
       setState("connecting");
 
-      const session =
-        await contextRef.current.requestSession();
+      const session = await context.requestSession();
 
       sessionRef.current = session;
       setCastSession(session);
