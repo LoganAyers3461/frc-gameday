@@ -174,9 +174,14 @@ export default function MultiviewClient({
                 </span>
               </div>
             ) : (
-              <span className="pl-2 font-bold text-lg">
-                FRC Gameday
-              </span>
+              <div className="flex flex-col pl-2">
+                <span className="font-bold text-sm">
+                  FieldView
+                </span>
+                <span className="text-xs text-gray-400">
+                  Powered by The Blue Alliance
+                </span>
+              </div>
             )}
           </div>
 
