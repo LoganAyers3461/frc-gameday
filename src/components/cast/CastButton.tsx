@@ -34,7 +34,7 @@ export default function CastButton() {
         ? "Stop Casting"
         : state === "connecting"
         ? "Connecting..."
-        : "Cast"}
+        : "Send via Chromecast"}
     </button>
   );
 }

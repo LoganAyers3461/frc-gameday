@@ -100,7 +100,7 @@ export function useCastSession() {
       const cast = (window as any).cast;
 
       if (!context || !cast?.framework) {
-        console.warn("Cast not ready yet");
+        console.warn("Cast not supported on this browser");
         return;
       }
 
