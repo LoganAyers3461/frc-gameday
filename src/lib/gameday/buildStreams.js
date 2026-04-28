@@ -34,7 +34,7 @@ export async function buildStreams(webcasts = []) {
         type: "youtube",
         channel: wc.channel,
         url: `https://www.youtube.com/embed/${wc.channel}?autoplay=1`,
-        chat: `https://www.youtube.com/live_chat?v=${wc.channel}`,
+        chat: `https://www.youtube.com/live_chat?v=${wc.channel}&embed_domain=${process.env.NEXT_PUBLIC_DOMAIN || window.location.hostname || "localhost"}`,
         date: wc.date,
         meta,
       };
