@@ -295,80 +295,82 @@ export default function MultiviewClient({
             bg-neutral-900 border-l border-neutral-700 p-3
             z-50 shadow-xl
             transition-transform duration-300
+            flex flex-col
             ${sidebarOpen ? "translate-x-0" : "translate-x-full"}
           `}
         >
-          <div className="font-bold text-sm mb-2">Stream Priority</div>
+          {/* SCROLLABLE AREA */}
+          <div className="flex-1 overflow-y-auto pr-1">
+            <div className="font-bold text-sm mb-2">Stream Priority</div>
 
-          <div className="space-y-1">
-            {homeOrder.map((childIndex) => {
-              const label =
-                labels?.[childIndex] || `Stream ${childIndex + 1}`;
+            <div className="space-y-1">
+              {homeOrder.map((childIndex) => {
+                const label =
+                  labels?.[childIndex] || `Stream ${childIndex + 1}`;
 
-              return (
-                <div
-                  key={childIndex}
-                  className="flex items-center justify-between bg-neutral-800 px-2 py-1 rounded"
-                >
-                  {/* LABEL */}
-                  <span className="text-xs truncate">
-                    {label.replace("- FIRST Robotics Competition", "")}
-                  </span>
+                return (
+                  <div
+                    key={childIndex}
+                    className="flex items-center justify-between bg-neutral-800 px-2 py-1 rounded"
+                  >
+                    <span className="text-xs truncate">
+                      {label.replace("- FIRST Robotics Competition", "")}
+                    </span>
 
-                  {/* CONTROLS */}
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => {
-                        setHomeOrder((prev) => {
-                          const i = prev.indexOf(childIndex);
-                          if (i <= 0) return prev;
-                          const next = [...prev];
-                          [next[i - 1], next[i]] = [next[i], next[i - 1]];
-                          return next;
-                        });
-                      }}
-                      className="px-2 py-0.5 bg-neutral-700 rounded text-xs"
-                    >
-                      ↑
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => {
+                          setHomeOrder((prev) => {
+                            const i = prev.indexOf(childIndex);
+                            if (i <= 0) return prev;
+                            const next = [...prev];
+                            [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                            return next;
+                          });
+                        }}
+                        className="px-2 py-0.5 bg-neutral-700 rounded text-xs"
+                      >
+                        ↑
+                      </button>
 
-                    <button
-                      onClick={() => {
-                        setHomeOrder((prev) => {
-                          const i = prev.indexOf(childIndex);
-                          if (i === -1 || i === prev.length - 1) return prev;
-                          const next = [...prev];
-                          [next[i + 1], next[i]] = [next[i], next[i + 1]];
-                          return next;
-                        });
-                      }}
-                      className="px-2 py-0.5 bg-neutral-700 rounded text-xs"
-                    >
-                      ↓
-                    </button>
+                      <button
+                        onClick={() => {
+                          setHomeOrder((prev) => {
+                            const i = prev.indexOf(childIndex);
+                            if (i === -1 || i === prev.length - 1) return prev;
+                            const next = [...prev];
+                            [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                            return next;
+                          });
+                        }}
+                        className="px-2 py-0.5 bg-neutral-700 rounded text-xs"
+                      >
+                        ↓
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            <div className="h-px bg-neutral-700 my-2" />
+
+            <div className="font-bold pb-1">Layouts</div>
+
+            {Object.entries(LAYOUTS).map(([key, value]) => (
+              <button
+                key={key}
+                onClick={() => setSelectedLayout(key)}
+                className={`
+                  block w-full text-left px-2 py-1 rounded text-sm
+                  hover:bg-neutral-800
+                  ${layoutKey === key ? "bg-neutral-700" : ""}
+                `}
+              >
+                {value.name}
+              </button>
+            ))}
           </div>
-
-          <div className="h-px bg-neutral-700 my-2" />
-
-          <div className="font-bold pb-1">Layouts</div>
-
-          {Object.entries(LAYOUTS).map(([key, value]) => (
-            <button
-              key={key}
-              onClick={() => setSelectedLayout(key)}
-              className={`
-                block w-full text-left px-2 py-1 rounded text-sm
-                hover:bg-neutral-800
-                ${layoutKey === key ? "bg-neutral-700" : ""}
-              `}
-            >
-              {value.name}
-            </button>
-          ))}
         </div>
       </>
     </div>
