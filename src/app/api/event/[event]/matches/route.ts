@@ -1,7 +1,7 @@
 import { getEventData } from "@/lib/tbaEventCache";
 import { TBA } from "@/lib/tbaService";
-import { revalidate } from "../route";
 
+export const revalidate = 30; // revalidate every 30 seconds
 export const GET = async (req: Request,
   { params }: { params: Promise<{ event: string }> }) => {
   const { event: event } = await params;
