@@ -1,6 +1,6 @@
 import { TBA } from "@/lib/tbaService";
 
-export const revalidate = 36000;
+export const revalidate = 3600; // revalidate every hour
 type EventState = "upcoming" | "in_progress" | "complete";
 
 function getEventState(event: any): "upcoming" | "in_progress" | "complete" {
@@ -47,7 +47,7 @@ export async function GET() {
       const end = new Date(ey, em - 1, ed);
 
       // event is ongoing or in the future
-      return start > today;
+      return start >= today;
     });
 
     const enriched = await Promise.all(
