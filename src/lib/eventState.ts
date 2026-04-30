@@ -26,10 +26,10 @@ export async function buildEventState(event: string) {
   return {
     event,
     updatedAt: Date.now(),
-    matches: sorted,
     nextMatch: next,
     lastMatch: last,
-    alliances,
+    alliances: alliances || null,
+    matches: sorted,
   };
 }
 

@@ -1,5 +1,15 @@
-import { getEventState, setEventState, computeNextMatch } from "@/lib/eventState";
+import {
+  getEventState,
+  setEventState,
+  computeNextMatch,
+  buildEventState,
+} from "@/lib/eventState";
+
 import { revalidateTag } from "next/cache";
+
+/* -------------------------- */
+/* Config                    */
+/* -------------------------- */
 
 const RELEVANT = new Set([
   "match_score",
@@ -9,8 +19,14 @@ const RELEVANT = new Set([
   "starting_comp_level",
 ]);
 
+const FORCE_REBUILD = new Set([
+  "schedule_updated",
+  "alliance_selection",
+  "starting_comp_level",
+]);
+
 /* -------------------------- */
-/* Helpers                    */
+/* Helpers                   */
 /* -------------------------- */
 
 function safeArray(arr: any) {
@@ -19,6 +35,17 @@ function safeArray(arr: any) {
 
 function extractMatch(data: any) {
   return data?.match ?? null;
+}
+
+/**
+ * Validate state integrity
+ */
+function isValidState(state: any) {
+  if (!state?.matches) return false;
+  if (!Array.isArray(state.matches)) return false;
+  if (state.matches.length === 0) return false;
+
+  return true;
 }
 
 /**
@@ -33,35 +60,22 @@ function applyDelta(matches: any[], type: string, data: any) {
       if (!match?.key) return matches;
 
       return matches.map((m) =>
-        m.key === match.key
-          ? match
-          : m
+        m.key === match.key ? { ...m, ...match } : m
       );
     }
 
-    case "schedule_updated": {
-      // If TBA includes matches (rare), replace
-      if (Array.isArray(data?.matches)) {
-        return data.matches;
-      }
-      return matches;
-    }
-
     case "upcoming_match": {
-        const match = extractMatch(data);
-        if (!match?.key) return matches;
-        // Update predicted_time for the match, if it exists
-        return matches.map((m) =>
-          m.key === match.key
-            ? { ...m, predicted_time: match.predicted_time ?? m.predicted_time }
-            : m
-        );
-    }
+      const match = extractMatch(data);
+      if (!match?.key) return matches;
 
-    case "alliance_selection":
-    case "starting_comp_level": {
-      // no structural change needed
-      return matches;
+      return matches.map((m) =>
+        m.key === match.key
+          ? {
+              ...m,
+              predicted_time: match.predicted_time ?? m.predicted_time,
+            }
+          : m
+      );
     }
 
     default:
@@ -70,7 +84,7 @@ function applyDelta(matches: any[], type: string, data: any) {
 }
 
 /* -------------------------- */
-/* Handler                    */
+/* Handler                   */
 /* -------------------------- */
 
 export async function POST(req: Request) {
@@ -80,9 +94,7 @@ export async function POST(req: Request) {
   const type = payload?.message_type;
 
   const eventKey =
-    data?.event_key ||
-    data?.eventKey ||
-    data?.event?.key;
+    data?.event_key || data?.eventKey || data?.event?.key;
 
   if (!eventKey) {
     return new Response("Missing event_key", { status: 400 });
@@ -94,25 +106,35 @@ export async function POST(req: Request) {
 
   try {
     /* -------------------------- */
-    /* 1. Load state              */
+    /* 1. Load state             */
     /* -------------------------- */
 
     let state = await getEventState(eventKey);
 
     if (!state) {
-      throw new Error("No state exists");
+      state = await buildEventState(eventKey);
     }
 
     state.matches = safeArray(state.matches);
 
+    /* 🚨 Force rebuild triggers */
+    if (FORCE_REBUILD.has(type)) {
+      const rebuilt = await buildEventState(eventKey);
+
+      await setEventState(eventKey, rebuilt);
+      revalidateTag(`event:${eventKey}`, "max");
+
+      return Response.json({ ok: true, rebuilt: true });
+    }
+
     /* -------------------------- */
-    /* 2. Apply delta             */
+    /* 2. Apply delta            */
     /* -------------------------- */
 
     const updatedMatches = applyDelta(state.matches, type, data);
 
     /* -------------------------- */
-    /* 3. Recompute derived       */
+    /* 3. Validate result        */
     /* -------------------------- */
 
     const nextMatch = computeNextMatch(updatedMatches);
@@ -121,10 +143,6 @@ export async function POST(req: Request) {
       [...updatedMatches]
         .reverse()
         .find((m) => m.actual_time !== null) ?? null;
-
-    /* -------------------------- */
-    /* 4. Build new state         */
-    /* -------------------------- */
 
     const newState = {
       ...state,
@@ -135,14 +153,26 @@ export async function POST(req: Request) {
       updatedAt: Date.now(),
     };
 
+    /* 🧪 Safety check */
+    if (!isValidState(newState)) {
+      console.warn("[WEBHOOK] Invalid state detected → rebuilding");
+
+      const rebuilt = await buildEventState(eventKey);
+
+      await setEventState(eventKey, rebuilt);
+      revalidateTag(`event:${eventKey}`, "max");
+
+      return Response.json({ ok: true, rebuilt: true, reason: "invalid" });
+    }
+
     /* -------------------------- */
-    /* 5. Persist                 */
+    /* 4. Persist                */
     /* -------------------------- */
 
     await setEventState(eventKey, newState);
 
     /* -------------------------- */
-    /* 6. Invalidate cache        */
+    /* 5. Invalidate cache       */
     /* -------------------------- */
 
     revalidateTag(`event:${eventKey}`, "max");
@@ -152,10 +182,8 @@ export async function POST(req: Request) {
     console.error("[WEBHOOK PATCH FAILED]", err);
 
     /* -------------------------- */
-    /* Fallback: full rebuild     */
+    /* Full fallback rebuild     */
     /* -------------------------- */
-
-    const { buildEventState } = await import("@/lib/eventState");
 
     const rebuilt = await buildEventState(eventKey);
 
