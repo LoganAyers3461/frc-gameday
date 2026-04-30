@@ -47,7 +47,9 @@ export default function TeamModal({
           t.nickname?.toLowerCase().includes(query) ||
           t.city?.toLowerCase().includes(query) ||
           t.state_prov?.toLowerCase().includes(query) ||
-          t.country?.toLowerCase().includes(query)
+          t.country?.toLowerCase().includes(query) ||
+          t.district?.abbreviation?.toLowerCase().includes(query) ||
+          t.district?.display_name?.toLowerCase().includes(query)
         );
       });
   }, [teams, search]);
@@ -116,7 +118,7 @@ export default function TeamModal({
                       : "bg-neutral-800 text-white hover:bg-neutral-700"
                   }`}
                 >
-                  <div>{t.team_number} — {t.nickname}</div>
+                  <div>{t.team_number} — {t.nickname} {t.district ? `[${(t.district.abbreviation || t.district.display_name).toUpperCase()}]` : ""}</div>
                   <div className="flex gap-2 text-xs">
                     <Rank status={teamsStatuses[t.key]} />
                     <Record status={teamsStatuses[t.key]} />
