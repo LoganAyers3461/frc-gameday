@@ -201,6 +201,11 @@ export const TBA = {
     tba.get(`/event/${eventKey}/matches/simple`, 15, {
       noStore: true,
     }),
+  
+  getEventMatchesSimpleNoCache: (eventKey: string) =>
+    tba.get(`/event/${eventKey}/matches/simple`, 0, {
+      noStore: true,
+    }),
 
   /* ------------------ */
   /* 🏆 Districts        */

@@ -13,7 +13,7 @@ export async function GET(
     return new Response("Missing Event Key", { status: 400 });
   }
 
-  const matches = await TBA.getEventMatchesSimple(event);
+  const matches = await TBA.getEventMatchesSimpleNoCache(event);
 
   const now = Date.now() / 1000;
 
