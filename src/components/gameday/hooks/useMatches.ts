@@ -1,27 +1,15 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 
-function getAdaptiveInterval(nextMatch?: any) {
-  const now = Date.now() / 1000;
-
-  if (!nextMatch?.predicted_time) return 180_000;
-
-  const secondsUntilMatch = nextMatch.predicted_time - now;
-
-  if (secondsUntilMatch < 120) return 10_000;
-  if (secondsUntilMatch < 300) return 30_000;
-
-  return 180_000;
-}
-
 export function useMatches(eventKey: string) {
   const [matches, setMatches] = useState<any[]>([]);
   const [nextMatch, setNextMatch] = useState<any>(null);
 
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hotRef = useRef<NodeJS.Timeout | null>(null);
+  const coldRef = useRef<NodeJS.Timeout | null>(null);
   const cancelledRef = useRef(false);
 
   /* -------------------------- */
-  /* FULL MATCH LIST            */
+  /* COLD PATH (FULL MATCHES)   */
   /* -------------------------- */
 
   const loadMatches = useCallback(async () => {
@@ -48,7 +36,7 @@ export function useMatches(eventKey: string) {
   }, [eventKey]);
 
   /* -------------------------- */
-  /* HOT PATH: NEXT MATCH       */
+  /* HOT PATH (NEXT MATCH)     */
   /* -------------------------- */
 
   const loadNextMatch = useCallback(async () => {
@@ -64,45 +52,44 @@ export function useMatches(eventKey: string) {
       const json = await res.json();
 
       setNextMatch(json?.next ?? null);
-
       return json?.next ?? null;
     } catch (err) {
-      console.error("Failed to fetch next match:", err);
-      setNextMatch(null);
+      console.error("Next match fetch failed:", err);
       return null;
     }
   }, [eventKey]);
 
   /* -------------------------- */
-  /* ADAPTIVE LOOP              */
+  /* HOT LOOP (3–5s ALWAYS)     */
   /* -------------------------- */
 
-  const scheduleNext = useCallback(async () => {
-    if (cancelledRef.current) return;
+  const startHotLoop = useCallback(() => {
+    const loop = async () => {
+      if (cancelledRef.current) return;
 
-    // 🔥 run both in parallel (fast + accurate)
-    const [latestMatches, latestNext] = await Promise.all([
-      loadMatches(),
-      loadNextMatch(),
-    ]);
+      await loadNextMatch();
 
-    const next =
-      latestNext ??
-      latestMatches.find((m: any) => m.actual_time === null) ??
-      null;
+      hotRef.current = setTimeout(loop, 3000); // 🔥 3s fixed
+    };
 
-    const delay = getAdaptiveInterval(next);
+    loop();
+  }, [loadNextMatch]);
 
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+  /* -------------------------- */
+  /* COLD LOOP (SLOW REFRESH)   */
+  /* -------------------------- */
 
-    timeoutRef.current = setTimeout(() => {
-      scheduleNext();
-    }, delay);
+  const startColdLoop = useCallback(() => {
+    const loop = async () => {
+      if (cancelledRef.current) return;
 
-    console.log(eventKey, "[useMatches] Next match refresh in:", delay);
-  }, [loadMatches, loadNextMatch, eventKey]);
+      await loadMatches();
+
+      coldRef.current = setTimeout(loop, 120000); // 2 min
+    };
+
+    loop();
+  }, [loadMatches]);
 
   /* -------------------------- */
   /* LIFECYCLE                  */
@@ -111,16 +98,16 @@ export function useMatches(eventKey: string) {
   useEffect(() => {
     cancelledRef.current = false;
 
-    scheduleNext();
+    startHotLoop();
+    startColdLoop();
 
     return () => {
       cancelledRef.current = true;
 
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (hotRef.current) clearTimeout(hotRef.current);
+      if (coldRef.current) clearTimeout(coldRef.current);
     };
-  }, [scheduleNext]);
+  }, [startHotLoop, startColdLoop]);
 
   /* -------------------------- */
   /* DERIVATIONS                */
