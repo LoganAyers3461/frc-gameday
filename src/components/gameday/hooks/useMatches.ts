@@ -15,11 +15,16 @@ function getAdaptiveInterval(nextMatch?: any) {
 
 export function useMatches(eventKey: string) {
   const [matches, setMatches] = useState<any[]>([]);
+  const [nextMatch, setNextMatch] = useState<any>(null);
+
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cancelledRef = useRef(false);
 
-  // 🔥 RETURN DATA
-  const load = useCallback(async () => {
+  /* -------------------------- */
+  /* FULL MATCH LIST            */
+  /* -------------------------- */
+
+  const loadMatches = useCallback(async () => {
     if (!eventKey || cancelledRef.current) return [];
 
     try {
@@ -34,7 +39,7 @@ export function useMatches(eventKey: string) {
       );
 
       setMatches(sorted);
-      return sorted; // 🔥 important
+      return sorted;
     } catch (err) {
       console.error("useMatches error:", err);
       setMatches([]);
@@ -42,31 +47,71 @@ export function useMatches(eventKey: string) {
     }
   }, [eventKey]);
 
+  /* -------------------------- */
+  /* HOT PATH: NEXT MATCH       */
+  /* -------------------------- */
+
+  const loadNextMatch = useCallback(async () => {
+    if (!eventKey || cancelledRef.current) return null;
+
+    try {
+      const res = await fetch(`/api/event/${eventKey}/matches/next`, {
+        cache: "no-store",
+      });
+
+      if (!res.ok) throw new Error("Next match fetch failed");
+
+      const json = await res.json();
+
+      setNextMatch(json?.next ?? null);
+
+      return json?.next ?? null;
+    } catch (err) {
+      console.error("Failed to fetch next match:", err);
+      setNextMatch(null);
+      return null;
+    }
+  }, [eventKey]);
+
+  /* -------------------------- */
+  /* ADAPTIVE LOOP              */
+  /* -------------------------- */
+
   const scheduleNext = useCallback(async () => {
     if (cancelledRef.current) return;
 
-    const latestMatches = await load(); // 🔥 always fresh
+    // 🔥 run both in parallel (fast + accurate)
+    const [latestMatches, latestNext] = await Promise.all([
+      loadMatches(),
+      loadNextMatch(),
+    ]);
 
-    const nextMatch =
-      latestMatches.find((m:any) => m.actual_time === null) || null;
+    const next =
+      latestNext ??
+      latestMatches.find((m: any) => m.actual_time === null) ??
+      null;
 
-    const delay = getAdaptiveInterval(nextMatch);
+    const delay = getAdaptiveInterval(next);
 
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
     timeoutRef.current = setTimeout(() => {
-      scheduleNext(); // 🔥 recursive loop
+      scheduleNext();
     }, delay);
 
     console.log(eventKey, "[useMatches] Next match refresh in:", delay);
-  }, [load, eventKey]);
+  }, [loadMatches, loadNextMatch, eventKey]);
+
+  /* -------------------------- */
+  /* LIFECYCLE                  */
+  /* -------------------------- */
 
   useEffect(() => {
     cancelledRef.current = false;
 
-    scheduleNext(); // 🔥 start loop
+    scheduleNext();
 
     return () => {
       cancelledRef.current = true;
@@ -78,23 +123,19 @@ export function useMatches(eventKey: string) {
   }, [scheduleNext]);
 
   /* -------------------------- */
-  /* PURE DERIVATIONS           */
+  /* DERIVATIONS                */
   /* -------------------------- */
-
-  const eventNextMatch = useMemo(() => {
-    return matches.find((m) => m.actual_time === null) || null;
-  }, [matches]);
 
   const eventLastMatch = useMemo(() => {
     return [...matches]
       .reverse()
-      .find((m) => m.actual_time !== null) || null;
+      .find((m: any) => m.actual_time !== null) || null;
   }, [matches]);
 
   return {
     matches,
-    eventNextMatch,
+    eventNextMatch: nextMatch,
     eventLastMatch,
-    reload: load,
+    reload: loadMatches,
   };
 }
