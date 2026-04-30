@@ -1,22 +1,29 @@
-import { revalidateTag } from "next/cache";
+import { buildEventState, setEventState } from "@/lib/eventState";
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const payload = await req.json();
 
-  const { message_type, message_data } = body;
+  const eventKey = payload?.message_data?.event_key;
+  const type = payload?.message_type;
 
-  if (message_type === "match_score") {
-    const eventKey = message_data.event_key;
-
-    revalidateTag(`tba:matches:${eventKey}`, "tag");
-    revalidateTag(`tba:event:${eventKey}`, "tag");
+  if (!eventKey) {
+    return new Response("Missing event_key", { status: 400 });
   }
 
-  if (message_type === "upcoming_match") {
-    const eventKey = message_data.event_key;
+  // Only rebuild on relevant updates
+  const relevant = new Set([
+    "match_score",
+    "upcoming_match",
+    "schedule_updated",
+  ]);
 
-    revalidateTag(`tba:event:${eventKey}`, "tag");
+  if (!relevant.has(type)) {
+    return Response.json({ ignored: true });
   }
 
-  return new Response("ok");
+  const state = await buildEventState(eventKey);
+
+  await setEventState(eventKey, state);
+
+  return Response.json({ ok: true });
 }
