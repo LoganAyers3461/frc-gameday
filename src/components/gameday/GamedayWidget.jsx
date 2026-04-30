@@ -208,6 +208,8 @@ export default function GamedayWidget({
               team={trackedTeams}
             />
           </div>
+          {/* RIGHT GRADIENT FADE OVERLAY */}
+           <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-neutral-900 to-transparent" />
         </div>
 
         {/* RIGHT CONTROLS */}
