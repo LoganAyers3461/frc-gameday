@@ -34,12 +34,7 @@ function applyDelta(matches: any[], type: string, data: any) {
 
       return matches.map((m) =>
         m.key === match.key
-          ? {
-              ...m,
-              ...match,
-              actual_time:
-                match.actual_time ?? match.time ?? m.actual_time,
-            }
+          ? match
           : m
       );
     }
@@ -52,7 +47,17 @@ function applyDelta(matches: any[], type: string, data: any) {
       return matches;
     }
 
-    case "upcoming_match":
+    case "upcoming_match": {
+        const match = extractMatch(data);
+        if (!match?.key) return matches;
+        // Update predicted_time for the match, if it exists
+        return matches.map((m) =>
+          m.key === match.key
+            ? { ...m, predicted_time: match.predicted_time ?? m.predicted_time }
+            : m
+        );
+    }
+
     case "alliance_selection":
     case "starting_comp_level": {
       // no structural change needed
