@@ -1,15 +1,21 @@
-export async function POST(req: Request) {
-  const event = await req.json();
+import { revalidateTag } from "next/cache";
 
-    console.log("Received TBA Webhook Event", event);
-    
-  if (event.type === "ping" || event.type === "verification") {
-        console.log("Received ping from TBA", event);
-    return new Response("ok");
+export async function POST(req: Request) {
+  const body = await req.json();
+
+  const { message_type, message_data } = body;
+
+  if (message_type === "match_score") {
+    const eventKey = message_data.event_key;
+
+    revalidateTag(`tba:matches:${eventKey}`, "tag");
+    revalidateTag(`tba:event:${eventKey}`, "tag");
   }
-  // Only act on meaningful updates
-  if (event.type === "match" || event.type === "alliance" || event.type === "rankings") {
-    //await invalidateEvent(eventKey);
+
+  if (message_type === "upcoming_match") {
+    const eventKey = message_data.event_key;
+
+    revalidateTag(`tba:event:${eventKey}`, "tag");
   }
 
   return new Response("ok");
