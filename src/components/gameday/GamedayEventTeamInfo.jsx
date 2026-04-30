@@ -28,7 +28,9 @@ export default function GamedayEventTeamInfo({ event, team: teamKey, teamStatus,
       <div className="flex flex-col justify-center shrink-0">
         {isTeamMode && (
           <div className="text-xs text-white">
-            {teamKey.map((t) => {return (<span key={t} className={activeDisplayTeam === t ? "font-bold underline gap-1" : "gap-1"}>{t.replace("frc", "Team ")} </span>)})} At
+            {/* {teamKey.map((t) => {return (<span key={t} className={activeDisplayTeam === t ? "font-bold underline gap-1" : "gap-1"}>{t.replace("frc", "FRC")} | </span>)})} At
+             */}
+            <span className="">Tracking {teamKey.length} Team(s) </span>
           </div>
         )}
 
@@ -36,6 +38,7 @@ export default function GamedayEventTeamInfo({ event, team: teamKey, teamStatus,
 
         {isTeamMode && (
           <div className="flex gap-1 text-nowrap text-sm">
+            <span className="text-white">Team {activeDisplayTeam?.replace("frc", "")}</span>
             <Rank status={teamStatus[activeDisplayTeam]} />
             <Record status={teamStatus[activeDisplayTeam]} />
           </div>
