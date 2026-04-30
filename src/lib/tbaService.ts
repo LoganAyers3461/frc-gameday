@@ -53,10 +53,10 @@ export const TBA = {
     tba.get(`/team/${teamKey}/event/${eventKey}/status`, 30),
 
   getTeamMatches: (teamKey: any, eventKey: any) =>
-    tba.get(`/team/${teamKey}/event/${eventKey}/matches`, 30),
+    tba.get(`/team/${teamKey}/event/${eventKey}/matches`, 15),
 
   getTeamMatchesSimple: (teamKey: any, eventKey: any) =>
-    tba.get(`/team/${teamKey}/event/${eventKey}/matches/simple`, 30),
+    tba.get(`/team/${teamKey}/event/${eventKey}/matches/simple`, 15),
 
   /* ------------------ */
   /* 📅 Events           */
@@ -180,17 +180,17 @@ export const TBA = {
     tba.get(`/event/${eventKey}/alliances`, 300),
 
   getEventTeamsStatuses: (eventKey:any) =>
-    tba.get(`/event/${eventKey}/teams/statuses`, 300),
+    tba.get(`/event/${eventKey}/teams/statuses`, 30),
 
   /* ------------------ */
   /* 🤖 Matches          */
   /* ------------------ */
 
   getEventMatches: (eventKey: any) =>
-    tba.get(`/event/${eventKey}/matches`, 30),
+    tba.get(`/event/${eventKey}/matches`, 15),
 
   getEventMatchesSimple: (eventKey: any) =>
-    tba.get(`/event/${eventKey}/matches/simple`, 30),
+    tba.get(`/event/${eventKey}/matches/simple`, 15),
 
   /* ------------------ */
   /* 📺 Webcasts         */

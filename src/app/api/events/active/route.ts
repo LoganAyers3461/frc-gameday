@@ -47,7 +47,7 @@ export async function GET() {
       const end = new Date(ey, em - 1, ed);
 
       // event is ongoing or in the future
-      return start >= today;
+      return start >= today || (start <= today && end >= today);
     });
 
     const enriched = await Promise.all(
