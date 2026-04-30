@@ -5,20 +5,21 @@ const memoryCache = new Map<string, any>();
 
 export class TBAClient {
   constructor(private authKey: string) {}
-  async get(endpoint: string, revalidate = 30) {
-    console.log("ROUTE EXECUTED", endpoint, Date.now());
+  async get(endpoint: string, revalidate = 30, options?: { noStore?: boolean }) {
+    console.log(`[TBA Client] Fetching ${endpoint} with revalidate=${revalidate} and noStore=${options?.noStore || false}`);
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       headers: {
         "X-TBA-Auth-Key": this.authKey,
       },
-      next: { revalidate },
-      cache: "no-store",
+      ...(options?.noStore
+        ? { cache: "no-store" }
+        : { next: { revalidate } }),
     });
 
     if (!res.ok) {
-      throw new Error(`[TBA Client] ERROR ${endpoint} ${res.status}: ${await res.text()}`);
+      throw new Error(`[TBA Client] ERROR ${endpoint} ${res.status}: ${res.statusText}`);
     }
-    console.log("[TBA Client] FETCH", endpoint, res.status);
+
     return res.json();
   }
 }
