@@ -14,7 +14,7 @@ export default function MatchList({
   if (!matches.length) return null;
   const futureMatches = matches.filter((m) => m.actual_time === null && m.key !== nextMatchKey.key);
   return (
-    <div className="flex gap-2 w-full overflow-x-auto no-scrollbar">
+    <div className="flex gap-2 w-full h-full mt-2 overflow-x-auto no-scrollbar">
       <MatchCard 
         key={lastMatchKey?.key } 
         match={lastMatchKey} 

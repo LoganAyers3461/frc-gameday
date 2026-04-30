@@ -23,7 +23,7 @@ export default function MatchCard({ match, team, isNext, isLast, playoffAlliance
         a.picks.some(pick => match.alliances.blue.team_keys.includes(pick))
     );
     return (
-        <div key={match.key} className="bg-neutral-800 p-2 rounded flex gap-2 items-center shrink-0">
+        <div key={match.key} className="bg-neutral-800 p-2 rounded flex gap-2  h-[90%] items-center shrink-0">
             <div className="flex flex-col">
                 <div className="text-center">{matchShortName(match, eventPlayoffType)}</div>
                 <div className="text-center">
