@@ -1,9 +1,8 @@
 export async function POST(req: Request) {
   const event = await req.json();
 
-  const eventKey = event?.event_key;
-  if (!eventKey) return new Response("bad payload", { status: 400 });
-
+    console.log("Received TBA Webhook Event", event);
+    
   if (event.type === "ping" || event.type === "verification") {
         console.log("Received ping from TBA", event);
     return new Response("ok");
