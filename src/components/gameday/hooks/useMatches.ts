@@ -3,21 +3,14 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 function getAdaptiveInterval(nextMatch?: any) {
   const now = Date.now() / 1000;
 
-  if (!nextMatch?.predicted_time) {
-    return 180_000; // 3 min fallback
-  }
+  if (!nextMatch?.predicted_time) return 180_000;
 
   const secondsUntilMatch = nextMatch.predicted_time - now;
 
-  if (secondsUntilMatch < 120) {
-    return 10_000; // 10s (very live)
-  }
+  if (secondsUntilMatch < 120) return 10_000;
+  if (secondsUntilMatch < 300) return 30_000;
 
-  if (secondsUntilMatch < 300) {
-    return 30_000; // 30s (approaching)
-  }
-
-  return 180_000; // 3 min (idle)
+  return 180_000;
 }
 
 export function useMatches(eventKey: string) {
@@ -25,8 +18,9 @@ export function useMatches(eventKey: string) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cancelledRef = useRef(false);
 
+  // 🔥 RETURN DATA
   const load = useCallback(async () => {
-    if (!eventKey || cancelledRef.current) return;
+    if (!eventKey || cancelledRef.current) return [];
 
     try {
       const res = await fetch(`/api/event/${eventKey}/matches`);
@@ -40,17 +34,21 @@ export function useMatches(eventKey: string) {
       );
 
       setMatches(sorted);
+      return sorted; // 🔥 important
     } catch (err) {
       console.error("useMatches error:", err);
       setMatches([]);
+      return [];
     }
   }, [eventKey]);
 
-  const scheduleNext = useCallback((latestMatches: any[]) => {
+  const scheduleNext = useCallback(async () => {
     if (cancelledRef.current) return;
 
+    const latestMatches = await load(); // 🔥 always fresh
+
     const nextMatch =
-      latestMatches.find((m) => m.actual_time === null) || null;
+      latestMatches.find((m:any) => m.actual_time === null) || null;
 
     const delay = getAdaptiveInterval(nextMatch);
 
@@ -58,27 +56,17 @@ export function useMatches(eventKey: string) {
       clearTimeout(timeoutRef.current);
     }
 
-    timeoutRef.current = setTimeout(async () => {
-      await load();
-      scheduleNext(latestMatches);
+    timeoutRef.current = setTimeout(() => {
+      scheduleNext(); // 🔥 recursive loop
     }, delay);
 
     console.log(eventKey, "[useMatches] Next match refresh in:", delay);
-  }, [load]);
+  }, [load, eventKey]);
 
   useEffect(() => {
     cancelledRef.current = false;
 
-    const init = async () => {
-      await load();
-
-      setMatches((prev) => {
-        scheduleNext(prev);
-        return prev;
-      });
-    };
-
-    init();
+    scheduleNext(); // 🔥 start loop
 
     return () => {
       cancelledRef.current = true;
@@ -87,7 +75,7 @@ export function useMatches(eventKey: string) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [load, scheduleNext]);
+  }, [scheduleNext]);
 
   /* -------------------------- */
   /* PURE DERIVATIONS           */
