@@ -28,7 +28,7 @@ function getLastMatch(matches: any[], now = Date.now()) {
   let bestTime = -Infinity;
 
   for (const m of matches) {
-    const t = m.actual_time ?? m.time;
+    const t = m.actual_time ?? m.post_result_time ?? m.time;
     if (!t) continue;
 
     const ms = t * 1000;
