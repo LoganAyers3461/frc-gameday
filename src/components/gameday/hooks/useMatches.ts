@@ -11,11 +11,11 @@ function getRefreshDelay(nextMatch: any) {
   const diff = matchTime - now;
 
   // if match is soon → poll aggressively
-  if (diff < 60_000 || diff > 60_000) return 2000;
-  if (diff < 5 * 60_000 || diff > 5 * 60_000) return 5000;
+  if (diff < 60_000 ) return 2000;
+  if (diff < 5 * 60_000) return 5000;
 
   // otherwise slow down
-  return 15000;
+  return 30000;
 }
 
 export function useMatches(eventKey: string) {
