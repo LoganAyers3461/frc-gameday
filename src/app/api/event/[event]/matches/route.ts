@@ -26,7 +26,11 @@ function getNextMatch(matches: any[], now = Date.now()) {
 function getLastMatch(matches: any[], now = Date.now()) {
   let best: any = null;
   let bestTime = -Infinity;
-
+  matches.sort((a, b) => {
+    const ta = a.actual_time ?? a.post_result_time ?? a.time ?? 0;
+    const tb = b.actual_time ?? b.post_result_time ?? b.time ?? 0;
+    return ta - tb;
+  });
   for (const m of matches) {
     const t = m.actual_time ?? m.post_result_time ?? m.time;
     if (!t) continue;
