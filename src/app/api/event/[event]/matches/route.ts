@@ -67,6 +67,11 @@ export const GET = async (
       : data?.matches ?? [];
 
     const now = Date.now();
+    matchList.sort((a:any, b:any) => {
+      const ta = a.predicted_time ?? a.time ?? 0;
+      const tb = b.predicted_time ?? b.time ?? 0;
+      return ta - tb;
+    });
 
     /**
      * 2. Derive state (FULL OBJECTS ONLY)
