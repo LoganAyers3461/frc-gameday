@@ -86,16 +86,6 @@ export class TBAClient {
     const tags = deriveTags(endpoint);
 
     /* -------------------------- */
-    /* 1. Cache-first fast path   */
-    /* -------------------------- */
-    if (!options?.forceRefresh) {
-      const cached = await redis.get(cKey);
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    }
-
-    /* -------------------------- */
     /* 2. Build headers           */
     /* -------------------------- */
     const headers: Record<string, string> = {
