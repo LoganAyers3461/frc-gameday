@@ -17,7 +17,8 @@ export default function EventLocalTime({ timezone }) {
     return () => clearInterval(id);
   }, [timezone]);
 
-  return (
+    if (!timezone) return null;
+    else return (
     <span className="font-mono">
         {now.toLocaleTimeString("en-US", {
             timeZone: timezone,
