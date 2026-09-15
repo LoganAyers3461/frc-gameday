@@ -10,14 +10,15 @@ export async function GET(
     const data = await redis.get(redisKey);
 
     if (!data) {
-        return new Response("Nexus data not found", { status: 404 });
+        console.error("[Route][Nexus] Nexus data not found in Redis", { event });
+        return new Response(null, { status: 204 });
     }
 
     const payload = JSON.parse(data);
     const etag = `"${payload.dataAsOfTime}"`;
 
     if (req.headers.get("if-none-match") === etag) {
-        console.log("[Vercel][Nexus] ETag matched, returning 304", {
+        console.log("[Route][Nexus] ETag matched, returning 304", {
             event,
             etag,
         });
@@ -28,7 +29,7 @@ export async function GET(
             },
         });
     }
-    console.log("[Vercel][Nexus] ETag did not match, returning payload", {
+    console.log("[Route][Nexus] ETag did not match, returning payload", {
         event,
         etag,
     });

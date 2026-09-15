@@ -48,15 +48,18 @@ export default function GamedayWidget({
       data: nexusData,
       loading: nexusLoading,
       error: nexusError,
-  } = useNexus(eventKey);
+  } = useNexus(event);
   useEffect(() => {
-    if (!nexusData) return;
-
-    console.log("[Gameday][Nexus]", {
-        dataAsOfTime: nexusData.dataAsOfTime,
-        nowQueuing: nexusData.nowQueuing,
-        matches: nexusData.matches,
-    });
+    if (!nexusData) {
+      console.warn("[Gameday][Nexus] No data received yet for event:", event);
+    }
+    else {
+      console.log("[Gameday][Nexus]", {
+          dataAsOfTime: nexusData.dataAsOfTime,
+          nowQueuing: nexusData.nowQueuing,
+          matches: nexusData.matches,
+      });
+    }
 }, [nexusData]);
   // ==============================
   // REPORT LABEL TO PARENT
