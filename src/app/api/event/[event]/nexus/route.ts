@@ -10,7 +10,7 @@ export async function GET(
     const data = await redis.get(redisKey);
 
     if (!data) {
-        console.error("[Route][Nexus] Nexus data not found in Redis", { event });
+        console.warn("[Route][Nexus] Nexus data not found in Redis", { event });
         return new Response(null, { status: 204 });
     }
 
