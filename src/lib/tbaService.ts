@@ -169,6 +169,13 @@ export const TBA = {
     );
   },
 
+
+  /* ------------------ */
+  /* TBA Nexus Integration   */
+  /* ------------------ */
+  getEventNexusInfo: (eventKey: string) =>
+    tba.get(`/event/${eventKey}/nexus_info`, 86400),
+
   /* ------------------ */
   /* 🧍 Event Teams      */
   /* ------------------ */
