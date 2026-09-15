@@ -268,6 +268,24 @@ export const TBA = {
         );
     },
 
+    getLastMatch: async (eventKey: string) => {
+        const matches = (await TBA.getEventMatches(eventKey)) as any[];
+
+        let lastMatch = null;
+        let bestTime = -Infinity;
+
+        for (const match of matches ?? []) {
+            if (match?.actual_time == null) continue;
+
+            if (match.actual_time > bestTime) {
+                bestTime = match.actual_time;
+                lastMatch = match;
+            }
+        }
+
+        return lastMatch;
+    },
+    
     /* ------------------ */
     /* 🏆 Districts        */
     /* ------------------ */
