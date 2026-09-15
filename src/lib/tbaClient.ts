@@ -1,5 +1,5 @@
 const BASE_URL = "https://www.thebluealliance.com/api/v3";
-// import { redis } from "@/lib/redis";
+import { redis } from "@/lib/redis";
 
 function norm(endpoint: string) {
   return endpoint.replace(/\//g, ":");
@@ -56,19 +56,19 @@ export class TBAClient {
   async invalidateTag(tag: string) {
     const key = tagKey(tag);
 
-    // const members = await redis.smembers(key);
-    // if (!members?.length) return;
+    const members = await redis.smembers(key);
+    if (!members?.length) return;
 
-    // const pipeline = redis.pipeline();
+    const pipeline = redis.pipeline();
 
-    // for (const cache of members) {
-      // pipeline.del(cache);
-      // pipeline.del(`etag:${cache.replace("cache:", "")}`);
-    // }
+    for (const cache of members) {
+      pipeline.del(cache);
+      pipeline.del(`etag:${cache.replace("cache:", "")}`);
+    }
 
-    // pipeline.del(key);
+    pipeline.del(key);
 
-    // await pipeline.exec();
+    await pipeline.exec();
 
     console.log(`[TBA] invalidated tag ${tag}`);
   }
@@ -92,7 +92,7 @@ export class TBAClient {
       "X-TBA-Auth-Key": this.authKey,
     };
 
-    const etag = null //await redis.get(eKey);
+    const etag = await redis.get(eKey);
     if (!etag) {
       console.warn(`[TBA] no ETag found for ${endpoint}, ${eKey}`);
     }
@@ -116,7 +116,7 @@ export class TBAClient {
     /* -------------------------- */
     if (res.status === 304) {
       console.log(`[TBA] 304 Not Modified for ${endpoint}`);
-      const cached = null //await redis.get(cKey);
+      const cached = await redis.get(cKey);
 
       if (cached) {
         console.log(`[TBA] cache hit for ${endpoint} with ETag ${etag}`);
@@ -136,23 +136,23 @@ export class TBAClient {
       const data = await res.json();
       const newEtag = res.headers.get("ETag");
 
-      //await redis.set(cKey, JSON.stringify(data));
+      await redis.set(cKey, JSON.stringify(data));
 
       if (newEtag) {
-        //await redis.set(eKey, newEtag);
+        await redis.set(eKey, newEtag);
       }
 
       /* -------------------------- */
       /* 6. register tags           */
       /* -------------------------- */
       if (tags.length) {
-        //const pipeline = redis.pipeline();
+        const pipeline = redis.pipeline();
 
         for (const tag of tags) {
-          //pipeline.sadd(tagKey(tag), cKey);
+          pipeline.sadd(tagKey(tag), cKey);
         }
 
-        //await pipeline.exec();
+        await pipeline.exec();
       }
 
       return data;
@@ -185,20 +185,20 @@ export class TBAClient {
     const data = await res.json();
     const etag = res.headers.get("ETag");
 
-    //await redis.set(cKey, JSON.stringify(data));
+    await redis.set(cKey, JSON.stringify(data));
 
     if (etag) {
-      //await redis.set(eKey, etag);
+      await redis.set(eKey, etag);
     }
 
     if (tags.length) {
-      //const pipeline = redis.pipeline();
+      const pipeline = redis.pipeline();
 
       for (const tag of tags) {
-        //pipeline.sadd(tagKey(tag), cKey);
+        pipeline.sadd(tagKey(tag), cKey);
       }
 
-      //await pipeline.exec();
+      await pipeline.exec();
     }
 
     return data;
