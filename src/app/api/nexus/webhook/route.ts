@@ -3,13 +3,15 @@ import { redis } from "@/lib/redis";
 export async function POST(req: Request) {
     const payload = await req.json();
 
-    console.log("[WEBHOOK][Nexus] Received payload", { payload });
+    console.log("[WEBHOOK][Nexus] Received payload", payload);
 
+    //Accept the message from Nexus if we recieve a new validation token, this means a new webhook has been registered.
     if (payload.token) {
         console.warn("[WEBHOOK][Nexus] Nexus Validation Token Recieved", payload.token);
         return new Response(payload.token, { status: 200 });
     }
 
+    //If we dont have an event key or a dataAsOfTime field then we cant validate it against our cache schema
     if (!payload?.eventKey || !payload?.dataAsOfTime) {
         return new Response("Invalid payload", { status: 400 });
     }

@@ -1,7 +1,7 @@
 import { redis } from "@/lib/redis";
 
 export async function GET(
-    _req: Request,
+    req: Request,
     { params }: { params: Promise<{ event: string }> }
 ) {
     const { event } = await params;
@@ -13,5 +13,22 @@ export async function GET(
         return new Response("Nexus data not found", { status: 404 });
     }
 
-    return Response.json(JSON.parse(data));
+    const payload = JSON.parse(data);
+    const etag = `"${payload.dataAsOfTime}"`;
+
+    if (req.headers.get("if-none-match") === etag) {
+        return new Response(null, {
+            status: 304,
+            headers: {
+                ETag: etag,
+            },
+        });
+    }
+
+    return Response.json(payload, {
+        headers: {
+            ETag: etag,
+            "Cache-Control": "no-cache",
+        },
+    });
 }
