@@ -1,4 +1,4 @@
-// import { redis } from "./redis";
+import { redis } from "./redis";
 import { TBA } from "./tbaService";
 
 function key(event: string) {
@@ -39,7 +39,7 @@ export async function buildEventState(event: string) {
 export async function setEventState(event: string, state: any) {
   const key = `state:${event}`;
 
-  // await redis.set(key, JSON.stringify(state));
+  await redis.set(key, JSON.stringify(state));
 }
 
 /**
@@ -48,7 +48,7 @@ export async function setEventState(event: string, state: any) {
 export async function getEventState(event: string) {
   const key = `state:${event}`;
 
-  const cached = null // await redis.get(key);
+  const cached = await redis.get(key);
 
   if (!cached) return null;
 
@@ -78,11 +78,11 @@ export function computeNextMatch(matches: any[]) {
 export async function getAllEventKeys() {
   // depends on Redis client
   // example:
-  //return await redis.keys("*");
+  return await redis.keys("*");
 }
 
 export async function getKey(key: string) {
-  const cached = null // await redis.get(key);
+  const cached = await redis.get(key);
   
   if (!cached) return null;
     try {

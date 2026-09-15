@@ -1,5 +1,5 @@
 import { TBA } from "@/lib/tbaService";
-//import { redis } from "@/lib/redis";
+import { redis } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 2;
@@ -44,7 +44,7 @@ export const GET = async (
     /**
      * 1. Load cached last match
      */
-    const cachedLast = null //await redis.get(keys.last);
+    const cachedLast = await redis.get(keys.last);
 
     if (!cachedLast) {
       return new Response(
@@ -78,7 +78,7 @@ export const GET = async (
      * If somehow this match is no longer the latest,
      * recompute from cached list
      */
-    const cachedMatches = null //await redis.get(keys.matches);
+    const cachedMatches = await redis.get(keys.matches);
 
     if (cachedMatches) {
       const matches = JSON.parse(cachedMatches);
@@ -87,10 +87,10 @@ export const GET = async (
 
       if (correctLast && correctLast.key !== lastMatch.key) {
         lastMatch = correctLast;
-        //await redis.set(keys.last, JSON.stringify(correctLast));
+        await redis.set(keys.last, JSON.stringify(correctLast));
       } else {
         // persist refreshed version
-        //await redis.set(keys.last, JSON.stringify(lastMatch));
+        await redis.set(keys.last, JSON.stringify(lastMatch));
       }
     }
 

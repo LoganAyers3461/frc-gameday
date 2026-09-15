@@ -1,4 +1,4 @@
-// import { redis } from "@/lib/redis";
+import { redis } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -64,7 +64,7 @@ export const GET = async (
     /**
      * STEP 1 — load canonical match list
      */
-    const raw = null //await redis.get(keys.matches);
+    const raw = await redis.get(keys.matches);
 
     if (!raw) {
       return Response.json(
@@ -84,7 +84,7 @@ export const GET = async (
     /**
      * STEP 3 — compare cached pointer (optional optimization)
      */
-    const cachedRaw = null //await redis.get(keys.next);
+    const cachedRaw = await redis.get(keys.next);
     let cachedNext = null;
 
     if (cachedRaw) {
@@ -98,9 +98,9 @@ export const GET = async (
      */
     if (changed) {
       if (nextMatch) {
-        //await redis.set(keys.next, JSON.stringify(nextMatch));
+        await redis.set(keys.next, JSON.stringify(nextMatch));
       } else {
-        //await redis.del(keys.next);
+        await redis.del(keys.next);
       }
     }
 

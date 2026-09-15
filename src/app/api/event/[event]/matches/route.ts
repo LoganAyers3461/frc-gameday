@@ -1,5 +1,5 @@
 import { TBA } from "@/lib/tbaService";
-//import { redis } from "@/lib/redis";
+import { redis } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 5;
@@ -93,18 +93,18 @@ export const GET = async (
     /**
      * 4. Persist full canonical state
      */
-    // await redis.set(keys.matches, JSON.stringify(matchList));
+    await redis.set(keys.matches, JSON.stringify(matchList));
 
     if (nextMatch) {
-      //await redis.set(keys.next, JSON.stringify(nextMatch));
+      await redis.set(keys.next, JSON.stringify(nextMatch));
     } else {
-      //await redis.del(keys.next);
+      await redis.del(keys.next);
     }
 
     if (lastMatch) {
-      //await redis.set(keys.last, JSON.stringify(lastMatch));
+      await redis.set(keys.last, JSON.stringify(lastMatch));
     } else {
-      //await redis.del(keys.last);
+      await redis.del(keys.last);
     }
 
     /**
