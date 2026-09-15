@@ -265,7 +265,7 @@ export async function POST(req: Request) {
          */
 
         case "verification":
-            console.log(`[WEBHOOK][TBA] Recieved Webhook Verification Code ${payload.message_data?.verification_code}`);
+            console.log(`[WEBHOOK][TBA] Recieved Webhook Verification Code ${payload.message_data?.verification_key}`);
         case "ping":
         case "broadcast":
             break;
