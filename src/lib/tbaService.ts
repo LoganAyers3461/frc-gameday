@@ -6,30 +6,35 @@ import { buildStreams } from "@/lib/gameday/buildStreams";
 /* -------------------------- */
 
 function parseDate(dateStr: string) {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return new Date(y, m - 1, d);
 }
 
 function getWeekRange(now = new Date()) {
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - start.getDay());
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - start.getDay());
 
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
 
-  return { start, end };
+    return { start, end };
 }
 
-function isEventThisWeek(event: any, weekStart: Date, weekEnd: Date) {
-  const start = parseDate(event.start_date);
-  const end = parseDate(event.end_date);
-  return start <= weekEnd && end >= weekStart;
+function isEventThisWeek(
+    event: any,
+    weekStart: Date,
+    weekEnd: Date
+) {
+    const start = parseDate(event.start_date);
+    const end = parseDate(event.end_date);
+
+    return start <= weekEnd && end >= weekStart;
 }
 
 function isMatchPlayed(match: any) {
-  return match?.actual_time != null;
+    return match?.actual_time != null;
 }
 
 /* -------------------------- */
@@ -37,255 +42,315 @@ function isMatchPlayed(match: any) {
 /* -------------------------- */
 
 export const TBA = {
-  /* ------------------ */
-  /* 👤 Teams            */
-  /* ------------------ */
+    /* ------------------ */
+    /* 👤 Teams            */
+    /* ------------------ */
 
-  getTeam: (teamKey: string) =>
-    tba.get(`/team/${teamKey}`, 86400),
+    getTeam: (teamKey: string) =>
+        tba.get(`/team/${teamKey}`),
 
-  getTeamDistricts: (teamKey: string) =>
-    tba.get(`/team/${teamKey}/districts`, 86400),
+    getTeamDistricts: (teamKey: string) =>
+        tba.get(`/team/${teamKey}/districts`),
 
-  getTeamEvents: (teamKey: string, year: number) =>
-    tba.get(`/team/${teamKey}/events/${year}`, 86400),
+    getTeamEvents: (teamKey: string, year: number) =>
+        tba.get(`/team/${teamKey}/events/${year}`),
 
-  getTeamEventStatus: (teamKey: string, eventKey: string) =>
-    tba.get(`/team/${teamKey}/event/${eventKey}/status`, 30),
+    getTeamEventStatus: (
+        teamKey: string,
+        eventKey: string
+    ) =>
+        tba.get(
+            `/team/${teamKey}/event/${eventKey}/status`
+        ),
 
-  getTeamMatches: (teamKey: string, eventKey: string) =>
-    tba.get(`/team/${teamKey}/event/${eventKey}/matches`, 15, {
-      noStore: true,
-    }),
+    getTeamMatches: (
+        teamKey: string,
+        eventKey: string
+    ) =>
+        tba.get(
+            `/team/${teamKey}/event/${eventKey}/matches`
+        ),
 
-  getTeamMatchesSimple: (teamKey: string, eventKey: string) =>
-    tba.get(`/team/${teamKey}/event/${eventKey}/matches/simple`, 15, {
-      noStore: true,
-    }),
+    getTeamMatchesSimple: (
+        teamKey: string,
+        eventKey: string
+    ) =>
+        tba.get(
+            `/team/${teamKey}/event/${eventKey}/matches/simple`
+        ),
 
-  /* ------------------ */
-  /* 📅 Events           */
-  /* ------------------ */
+    /* ------------------ */
+    /* 📅 Events           */
+    /* ------------------ */
 
-  getEvent: (eventKey: string) =>
-    tba.get(`/event/${eventKey}`, 86400),
+    getEvent: (eventKey: string) =>
+        tba.get(`/event/${eventKey}`),
 
-  getEventSimple: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/simple`, 86400),
+    getEventSimple: (eventKey: string) =>
+        tba.get(`/event/${eventKey}/simple`),
 
-  getEvents: (year: number) =>
-    tba.get(`/events/${year}`, 86400),
+    getEvents: (year: number) =>
+        tba.get(`/events/${year}`),
 
-  getEventsSimple: (year: number) =>
-    tba.get(`/events/${year}/simple`, 86400),
+    getEventsSimple: (year: number) =>
+        tba.get(`/events/${year}/simple`),
 
-  /* ------------------ */
-  /* 🔍 Derived Events   */
-  /* ------------------ */
+    /* ------------------ */
+    /* 🔍 Derived Events   */
+    /* ------------------ */
 
-  getActiveEvents: async (year: number) => {
-    const events = (await TBA.getEvents(year)) as any[];
+    getActiveEvents: async (year: number) => {
+        const events = (await TBA.getEvents(year)) as any[];
 
-    const { start, end } = getWeekRange();
+        const { start, end } = getWeekRange();
 
-    return events.filter((e) =>
-      isEventThisWeek(e, start, end)
-    );
-  },
+        return events.filter((event) =>
+            isEventThisWeek(event, start, end)
+        );
+    },
 
-  getActiveEventsWithTeams: async (year: number) => {
-    const activeEvents = await TBA.getActiveEvents(year);
+    getActiveEventsWithTeams: async (year: number) => {
+        const activeEvents =
+            await TBA.getActiveEvents(year);
 
-    return Promise.all(
-      activeEvents.map(async (event: any) => {
-        const teams = await TBA.getTeamsAtEvent(event.key);
+        return Promise.all(
+            activeEvents.map(async (event: any) => {
+                const teams =
+                    await TBA.getTeamsAtEvent(event.key);
 
-        return {
-          ...event,
-          teams,
-        };
-      })
-    );
-  },
+                return {
+                    ...event,
+                    teams,
+                };
+            })
+        );
+    },
 
-  getActiveEventsWithMatches: async (year: number) => {
-    const events = (await TBA.getEvents(year)) as any[];
+    getActiveEventsWithMatches: async (year: number) => {
+        const events =
+            (await TBA.getEvents(year)) as any[];
 
-    const now = new Date();
+        const now = new Date();
 
-    const candidates = events.filter((e) => {
-      const start = parseDate(e.start_date);
-      const end = parseDate(e.end_date);
-      return start <= now && now <= end;
-    });
+        const candidates = events.filter((event) => {
+            const start = parseDate(event.start_date);
+            const end = parseDate(event.end_date);
 
-    const enriched = await Promise.all(
-      candidates.map(async (event: any) => {
-        const matches = (await TBA.getEventMatchesSimple(event.key)) as any[];
+            return start <= now && now <= end;
+        });
 
-        const hasPlayedMatches = matches.some(isMatchPlayed);
+        const enriched = await Promise.all(
+            candidates.map(async (event: any) => {
+                const matches =
+                    (await TBA.getEventMatchesSimple(
+                        event.key
+                    )) as any[];
 
-        return hasPlayedMatches ? event : null;
-      })
-    );
+                const hasPlayedMatches =
+                    matches.some(isMatchPlayed);
 
-    return enriched.filter(Boolean);
-  },
+                return hasPlayedMatches
+                    ? event
+                    : null;
+            })
+        );
 
-  getActiveEventsFull: async (year: number) => {
-    const events = await TBA.getActiveEventsWithMatches(year);
+        return enriched.filter(Boolean);
+    },
 
-    return Promise.all(
-      events
-        .filter(Boolean)
-        .map(async (event: any) => {
-          const [teams, matches] = await Promise.all([
-            TBA.getTeamsAtEvent(event.key),
-            TBA.getEventMatchesSimple(event.key),
-          ]);
+    getActiveEventsFull: async (year: number) => {
+        const events =
+            await TBA.getActiveEventsWithMatches(year);
 
-          const hasDivisions = (event.division_keys?.length ?? 0) > 0;
-          const hasMatches = matches.length > 0;
-          const hasPlayedMatches = matches.some(isMatchPlayed);
+        return Promise.all(
+            events
+                .filter(Boolean)
+                .map(async (event: any) => {
+                    const [teams, matches] =
+                        await Promise.all([
+                            TBA.getTeamsAtEvent(event.key),
+                            TBA.getEventMatchesSimple(
+                                event.key
+                            ),
+                        ]);
 
-          const now = new Date();
-          const start = parseDate(event.start_date);
+                    const hasDivisions =
+                        (event.division_keys?.length ?? 0) > 0;
 
-          const isPastStart = now >= start;
+                    const hasMatches =
+                        matches.length > 0;
 
-          return {
-            ...event,
-            teams,
-            matches,
+                    const hasPlayedMatches =
+                        matches.some(isMatchPlayed);
 
-            flags: {
-              isPastStart,
-              hasDivisions,
-              hasMatches,
-              hasPlayedMatches,
-            },
-          };
-        })
-    );
-  },
+                    const now = new Date();
+                    const start =
+                        parseDate(event.start_date);
 
+                    const isPastStart =
+                        now >= start;
 
-  /* ------------------ */
-  /* TBA Nexus Integration   */
-  /* ------------------ */
-  getEventNexusInfo: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/nexus_info`, 86400),
+                    return {
+                        ...event,
+                        teams,
+                        matches,
 
-  /* ------------------ */
-  /* 🧍 Event Teams      */
-  /* ------------------ */
+                        flags: {
+                            isPastStart,
+                            hasDivisions,
+                            hasMatches,
+                            hasPlayedMatches,
+                        },
+                    };
+                })
+        );
+    },
 
-  getTeamsAtEvent: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/teams`, 86400),
+    /* ------------------ */
+    /* TBA Nexus Integration */
+    /* ------------------ */
 
-  getTeamsAtEventSimple: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/teams/simple`, 86400),
+    getEventNexusInfo: (eventKey: string) =>
+        tba.get(
+            `/event/${eventKey}/nexus_info`
+        ),
 
-  getTeamKeysAtEvent: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/teams/keys`, 86400),
+    /* ------------------ */
+    /* 🧍 Event Teams      */
+    /* ------------------ */
 
-  getEventPlayoffAlliances: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/alliances`, 300),
+    getTeamsAtEvent: (eventKey: string) =>
+        tba.get(`/event/${eventKey}/teams`),
 
-  getEventTeamsStatuses: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/teams/statuses`, 30),
+    getTeamsAtEventSimple: (eventKey: string) =>
+        tba.get(`/event/${eventKey}/teams/simple`),
 
-  /* ------------------ */
-  /* 🤖 Matches          */
-  /* ------------------ */
+    getTeamKeysAtEvent: (eventKey: string) =>
+        tba.get(`/event/${eventKey}/teams/keys`),
 
-  getMatch: (matchKey: string) =>
-    tba.get(`/match/${matchKey}`, 0, {
-      noStore: true,
-    }),
+    getEventPlayoffAlliances: (eventKey: string) =>
+        tba.get(`/event/${eventKey}/alliances`),
 
-  getEventMatches: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/matches`, 15, {
-      noStore: true,
-    }),
+    getEventTeamsStatuses: (eventKey: string) =>
+        tba.get(
+            `/event/${eventKey}/teams/statuses`
+        ),
 
-  getEventMatchesSimple: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/matches/simple`, 15, {
-      noStore: true,
-    }),
-  
-  getEventMatchesSimpleNoCache: (eventKey: string) =>
-    tba.get(`/event/${eventKey}/matches/simple`, 0, {
-      noStore: true,
-    }),
+    /* ------------------ */
+    /* 🤖 Matches          */
+    /* ------------------ */
 
-  /* ------------------ */
-  /* 🏆 Districts        */
-  /* ------------------ */
+    getMatch: (matchKey: string) =>
+        tba.get(`/match/${matchKey}`),
 
-  getDistricts: (year: number) =>
-    tba.get(`/districts/${year}`, 86400),
+    getEventMatches: (eventKey: string) =>
+        tba.get(`/event/${eventKey}/matches`),
 
-  getDistrictTeams: (districtKey: string) =>
-    tba.get(`/district/${districtKey}/teams`, 86400),
+    getEventMatchesSimple: (eventKey: string) =>
+        tba.get(
+            `/event/${eventKey}/matches/simple`
+        ),
 
-  getDistrictTeamKeys: (districtKey: string) =>
-    tba.get(`/district/${districtKey}/teams/keys`, 86400),
+    /* ------------------ */
+    /* 🏆 Districts        */
+    /* ------------------ */
 
-  getDistrictEvents: (districtKey: string) =>
-    tba.get(`/district/${districtKey}/events`, 86400),
+    getDistricts: (year: number) =>
+        tba.get(`/districts/${year}`),
 
-  getDistrictRankings: (districtKey: string) =>
-    tba.get(`/district/${districtKey}/rankings`, 86400),
+    getDistrictTeams: (districtKey: string) =>
+        tba.get(
+            `/district/${districtKey}/teams`
+        ),
 
-  getDistrictAdvancement: (districtKey: string) =>
-    tba.get(`/district/${districtKey}/advancement`, 86400),
+    getDistrictTeamKeys: (districtKey: string) =>
+        tba.get(
+            `/district/${districtKey}/teams/keys`
+        ),
 
-  getDistrictTeamsAdvancedToCMP: async (districtKey: string) => {
-    const advancement = await tba.get(
-      `/district/${districtKey}/advancement`,
-      86400
-    );
+    getDistrictEvents: (districtKey: string) =>
+        tba.get(
+            `/district/${districtKey}/events`
+        ),
 
-    return Object.entries(advancement)
-      .filter(([, t]: any) => t.cmp === true)
-      .map(([key, t]: any) => ({
-        key,
-        ...t,
-        district_key: districtKey,
-        district_abbreviation: districtKey.replace(/[0-9]/g, "").toUpperCase(),
-      }));
-  },
+    getDistrictRankings: (districtKey: string) =>
+        tba.get(
+            `/district/${districtKey}/rankings`
+        ),
 
-  getAllDistrictTeamsAdvancedToCMP: async (year: number) => {
-    const districts = await tba.get(`/districts/${year}`, 86400);
+    getDistrictAdvancement: (districtKey: string) =>
+        tba.get(
+            `/district/${districtKey}/advancement`
+        ),
 
-    const allCMPTeams = await Promise.all(
-      districts.map((d: any) =>
-        tba
-          .get(`/district/${d.key}/advancement`, 86400)
-          .then((advancement: any) =>
-            Object.entries(advancement)
-              .filter(([, t]: any) => t.cmp === true)
-              .map(([key, t]: any) => ({
+    getDistrictTeamsAdvancedToCMP: async (
+        districtKey: string
+    ) => {
+        const advancement = await tba.get(
+            `/district/${districtKey}/advancement`
+        );
+
+        return Object.entries(advancement)
+            .filter(([, t]: any) => t.cmp === true)
+            .map(([key, t]: any) => ({
                 key,
                 ...t,
-                district_key: d.key,
-                district_abbreviation: d.key.replace(/[0-9]/g, "").toUpperCase(),
-              }))
-          )
-      )
-    );
+                district_key: districtKey,
+                district_abbreviation:
+                    districtKey
+                        .replace(/[0-9]/g, "")
+                        .toUpperCase(),
+            }));
+    },
 
-    return allCMPTeams.flat();
-  },
+    getAllDistrictTeamsAdvancedToCMP: async (
+        year: number
+    ) => {
+        const districts = await tba.get(
+            `/districts/${year}`
+        );
 
-  /* ------------------ */
-  /* 📺 Webcasts         */
-  /* ------------------ */
+        const allCMPTeams =
+            await Promise.all(
+                districts.map((district: any) =>
+                    tba
+                        .get(
+                            `/district/${district.key}/advancement`
+                        )
+                        .then((advancement: any) =>
+                            Object.entries(advancement)
+                                .filter(
+                                    ([, t]: any) =>
+                                        t.cmp === true
+                                )
+                                .map(([key, t]: any) => ({
+                                    key,
+                                    ...t,
+                                    district_key:
+                                        district.key,
+                                    district_abbreviation:
+                                        district.key
+                                            .replace(
+                                                /[0-9]/g,
+                                                ""
+                                            )
+                                            .toUpperCase(),
+                                }))
+                        )
+                )
+            );
 
-  getEventWebcasts: (eventKey: string) =>
-    tba.get(`/event/${eventKey}`, 86400).then(async (e: any) => {
-      return buildStreams(e.webcasts);
-    }),
+        return allCMPTeams.flat();
+    },
+
+    /* ------------------ */
+    /* 📺 Webcasts         */
+    /* ------------------ */
+
+    getEventWebcasts: (eventKey: string) =>
+        tba
+            .get(`/event/${eventKey}`)
+            .then((event: any) =>
+                buildStreams(event.webcasts)
+            ),
 };
