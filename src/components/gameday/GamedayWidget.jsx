@@ -26,6 +26,7 @@ import { useTeams } from "@/components/gameday/hooks/useTeams";
 import { usePlayoffAlliances } from "@/components/gameday/hooks/usePlayoffAlliances";
 import { useTrackedEvent } from "@/components/gameday/hooks/useTracking";
 import { useTeamsStatuses } from "@/components/gameday/hooks/useTeamsStatuses";
+import { useNexus } from "./hooks/useNexus";
 import TeamModal from "@/components/gameday/teamElements/TeamModal";
 import { refresh } from "next/cache";
 
@@ -43,7 +44,20 @@ export default function GamedayWidget({
   const { teamsStatuses, reload: reloadStatuses } = useTeamsStatuses(event);
   // const { matches, reload: reloadMatches } = useMatches(event);
   const { alliances: playoffAlliances, reload: reloadAlliances } = usePlayoffAlliances(event);
+  const {
+      data: nexusData,
+      loading: nexusLoading,
+      error: nexusError,
+  } = useNexus(eventKey);
+  useEffect(() => {
+    if (!nexusData) return;
 
+    console.log("[Gameday][Nexus]", {
+        dataAsOfTime: nexusData.dataAsOfTime,
+        nowQueuing: nexusData.nowQueuing,
+        matches: nexusData.matches,
+    });
+}, [nexusData]);
   // ==============================
   // REPORT LABEL TO PARENT
   // ==============================

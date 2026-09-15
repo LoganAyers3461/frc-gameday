@@ -17,6 +17,10 @@ export async function GET(
     const etag = `"${payload.dataAsOfTime}"`;
 
     if (req.headers.get("if-none-match") === etag) {
+        console.log("[Vercel][Nexus] ETag matched, returning 304", {
+            event,
+            etag,
+        });
         return new Response(null, {
             status: 304,
             headers: {
@@ -24,7 +28,10 @@ export async function GET(
             },
         });
     }
-
+    console.log("[Vercel][Nexus] ETag did not match, returning payload", {
+        event,
+        etag,
+    });
     return Response.json(payload, {
         headers: {
             ETag: etag,

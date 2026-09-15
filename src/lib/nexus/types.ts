@@ -1,22 +1,28 @@
-export interface NexusMatchInfo {
+export type NexusMatch = {
     label: string;
-    status:
-        | "Queuing soon"
-        | "Now queuing"
-        | "On deck"
-        | "On field";
-    played: boolean;
-    times: {
-        estimated_queue_time_ms: number | null;
-        estimated_start_time_ms: number | null;
+    status: string;
+    redTeams: string[];
+    blueTeams: string[];
+    times?: {
+        estimatedQueueTime?: number;
+        estimatedOnDeckTime?: number;
+        estimatedOnFieldTime?: number;
+        estimatedStartTime?: number;
+        actualQueueTime?: number;
+        actualOnDeckTime?: number;
+        actualOnFieldTime?: number;
+        actualStartTime?: number;
+        actualCommitTime?: number;
     };
-}
+    breakAfter?: string;
+    replayOf?: string;
+};
 
-export interface NexusInfo {
-    data_as_of_ms: number;
-    now_queueing: {
-        match_key: string;
-        match_name: string;
-    } | null;
-    matches: Record<string, NexusMatchInfo>;
-}
+export type NexusData = {
+    eventKey: string;
+    dataAsOfTime: number;
+    nowQueuing: string;
+    matches: NexusMatch[];
+    announcements: unknown[];
+    partsRequests: unknown[];
+};
