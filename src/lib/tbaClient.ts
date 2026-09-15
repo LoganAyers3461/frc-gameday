@@ -79,7 +79,7 @@ export class TBAClient {
         await pipeline.exec();
 
         console.log(
-            `[TBA][Client] invalidated tag ${tag}`
+            `[Client][TBA] invalidated tag ${tag}`
         );
     }
 
@@ -107,7 +107,7 @@ export class TBAClient {
                 cached = JSON.parse(cachedRaw);
             } catch {
                 console.warn(
-                    `[TBA][Client] invalid cache entry for ${endpoint}`
+                    `[Client][TBA] invalid cache entry for ${endpoint}`
                 );
 
                 await redis.del(cKey);
@@ -132,7 +132,7 @@ export class TBAClient {
             Date.now() < cached.expiresAt
         ) {
             console.log(
-                `[TBA][Client] Redis cache hit for ${endpoint}`
+                `[Client][TBA] Redis cache hit for ${endpoint}`
             );
 
             return cached.data;
@@ -159,7 +159,7 @@ export class TBAClient {
             headers["If-None-Match"] = cached.etag;
 
             console.log(
-                `[TBA][Client] validating cached entry for ${endpoint}`
+                `[Client][TBA] validating cached entry for ${endpoint}`
             );
         }
 
@@ -180,7 +180,7 @@ export class TBAClient {
         if (res.status === 304) {
             if (!cached) {
                 throw new Error(
-                    `[TBA][Client] received 304 without Redis cache for ${endpoint}`
+                    `[Client][TBA] received 304 without Redis cache for ${endpoint}`
                 );
             }
 
@@ -190,7 +190,7 @@ export class TBAClient {
 
             if (maxAge === null) {
                 throw new Error(
-                    `[TBA][Client] 304 response for ${endpoint} did not provide Cache-Control max-age`
+                    `[Client][TBA] 304 response for ${endpoint} did not provide Cache-Control max-age`
                 );
             }
 
@@ -205,7 +205,7 @@ export class TBAClient {
             );
 
             console.log(
-                `[TBA][Client] 304 Not Modified for ${endpoint}; freshness ${maxAge}s`
+                `[Client][TBA] 304 Not Modified for ${endpoint}; freshness ${maxAge}s`
             );
 
             return cached.data;
@@ -226,7 +226,7 @@ export class TBAClient {
 
             if (maxAge === null) {
                 throw new Error(
-                    `[TBA][Client] response for ${endpoint} did not provide Cache-Control max-age`
+                    `[Client][TBA] response for ${endpoint} did not provide Cache-Control max-age`
                 );
             }
 
@@ -267,14 +267,14 @@ export class TBAClient {
             }
 
             console.log(
-                `[TBA][Client] Redis cache updated for ${endpoint}; freshness ${maxAge}s`
+                `[Client][TBA] Redis cache updated for ${endpoint}; freshness ${maxAge}s`
             );
 
             return data;
         }
 
         throw new Error(
-            `[TBA][Client] ERROR ${endpoint} ${res.status}`
+            `[Client][TBA] ERROR ${endpoint} ${res.status}`
         );
     }
 }
