@@ -20,20 +20,46 @@ function tagKey(tag: string) {
     return `tag:${tag}`;
 }
 
+/**
+ * Derive cache invalidation tags from a TBA API endpoint.
+ *
+ * Tags intentionally become more specific as the endpoint
+ * becomes more specific.
+ *
+ * Examples:
+ *
+ * /event/2026ct
+ *   event:2026ct
+ *
+ * /event/2026ct/matches
+ *   event:2026ct
+ *   event:2026ct:matches
+ *
+ * /team/frc3461
+ *   team:frc3461
+ *
+ * /team/frc3461/event/2026ct/matches
+ *   team:frc3461
+ *   team:frc3461:event:2026ct
+ *   team:frc3461:event:2026ct:matches
+ *
+ * /match/2026ct_qm1
+ *   match:2026ct_qm1
+ */
 function deriveTags(endpoint: string): string[] {
     const parts = endpoint.split("/").filter(Boolean);
 
-    const tags: string[] = [];
+    const tags = new Set<string>();
 
     const eventIdx = parts.indexOf("event");
 
     if (eventIdx !== -1 && parts[eventIdx + 1]) {
         const eventKey = parts[eventIdx + 1];
 
-        tags.push(`event:${eventKey}`);
+        tags.add(`event:${eventKey}`);
 
         if (parts[eventIdx + 2]) {
-            tags.push(
+            tags.add(
                 `event:${eventKey}:${parts[eventIdx + 2]}`
             );
         }
@@ -42,10 +68,40 @@ function deriveTags(endpoint: string): string[] {
     const teamIdx = parts.indexOf("team");
 
     if (teamIdx !== -1 && parts[teamIdx + 1]) {
-        tags.push(`team:${parts[teamIdx + 1]}`);
+        const teamKey = parts[teamIdx + 1];
+
+        tags.add(`team:${teamKey}`);
+
+        /*
+         * /team/{team}/event/{event}
+         */
+        const teamEventIdx = teamIdx + 2;
+
+        if (
+            parts[teamEventIdx] === "event" &&
+            parts[teamEventIdx + 1]
+        ) {
+            const eventKey = parts[teamEventIdx + 1];
+
+            tags.add(
+                `team:${teamKey}:event:${eventKey}`
+            );
+
+            if (parts[teamEventIdx + 2]) {
+                tags.add(
+                    `team:${teamKey}:event:${eventKey}:${parts[teamEventIdx + 2]}`
+                );
+            }
+        }
     }
 
-    return tags;
+    const matchIdx = parts.indexOf("match");
+
+    if (matchIdx !== -1 && parts[matchIdx + 1]) {
+        tags.add(`match:${parts[matchIdx + 1]}`);
+    }
+
+    return [...tags];
 }
 
 function getMaxAge(cacheControl: string | null): number | null {
@@ -61,12 +117,17 @@ function getMaxAge(cacheControl: string | null): number | null {
 export class TBAClient {
     constructor(private authKey: string) {}
 
+    /**
+     * Invalidate every cache entry registered under one tag.
+     */
     async invalidateTag(tag: string) {
         const key = tagKey(tag);
 
         const members = await redis.smembers(key);
 
-        if (!members?.length) return;
+        if (!members?.length) {
+            return;
+        }
 
         const pipeline = redis.pipeline();
 
@@ -79,7 +140,60 @@ export class TBAClient {
         await pipeline.exec();
 
         console.log(
-            `[Client][TBA] invalidated tag ${tag}`
+            `[Client][TBA] invalidated tag ${tag} (${members.length} entries)`
+        );
+    }
+
+    /**
+     * Invalidate several tags.
+     *
+     * This is intentionally implemented as one Redis pipeline so
+     * a single webhook can invalidate several related resources
+     * without making a separate Redis round-trip for every tag.
+     */
+    async invalidateTags(tags: string[]) {
+        const uniqueTags = [...new Set(tags)];
+
+        if (!uniqueTags.length) {
+            return;
+        }
+
+        const pipeline = redis.pipeline();
+        const cacheKeys = new Set<string>();
+        const existingTagKeys: string[] = [];
+
+        for (const tag of uniqueTags) {
+            const key = tagKey(tag);
+            const members = await redis.smembers(key);
+
+            if (!members?.length) {
+                continue;
+            }
+
+            existingTagKeys.push(key);
+
+            for (const cache of members) {
+                cacheKeys.add(cache);
+            }
+        }
+
+        for (const cache of cacheKeys) {
+            pipeline.del(cache);
+        }
+
+        for (const key of existingTagKeys) {
+            pipeline.del(key);
+        }
+
+        if (
+            cacheKeys.size ||
+            existingTagKeys.length
+        ) {
+            await pipeline.exec();
+        }
+
+        console.log(
+            `[Client][TBA] invalidated tags ${uniqueTags.join(", ")} (${cacheKeys.size} cache entries)`
         );
     }
 
@@ -118,12 +232,6 @@ export class TBAClient {
          * --------------------------------------------------
          * Fresh cache hit
          * --------------------------------------------------
-         *
-         * TBA's max-age determines expiresAt.
-         *
-         * The Redis key itself does NOT expire here because
-         * stale data must remain available for ETag
-         * validation.
          */
 
         if (
@@ -196,7 +304,8 @@ export class TBAClient {
 
             const refreshed: CacheEntry = {
                 ...cached,
-                expiresAt: Date.now() + maxAge * 1000,
+                expiresAt:
+                    Date.now() + maxAge * 1000,
             };
 
             await redis.set(
@@ -233,7 +342,8 @@ export class TBAClient {
             const entry: CacheEntry = {
                 data,
                 etag: res.headers.get("ETag"),
-                expiresAt: Date.now() + maxAge * 1000,
+                expiresAt:
+                    Date.now() + maxAge * 1000,
             };
 
             /*
