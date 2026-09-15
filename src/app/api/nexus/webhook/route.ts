@@ -5,6 +5,11 @@ export async function POST(req: Request) {
 
     console.log("[WEBHOOK][Nexus] Received payload", { payload });
 
+    if (payload.token) {
+        console.warn("[WEBHOOK][Nexus] Nexus Validation Token Recieved", payload.token);
+        return new Response(payload.token, { status: 200 });
+    }
+
     if (!payload?.eventKey || !payload?.dataAsOfTime) {
         return new Response("Invalid payload", { status: 400 });
     }
