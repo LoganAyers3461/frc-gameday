@@ -1,5 +1,4 @@
 import { TBA } from "@/lib/tbaService";
-export const revalidate = 15000;
 
 export const GET = async (  req: Request,
   { params }: { params: Promise<{ event: string }> }) => {

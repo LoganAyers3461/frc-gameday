@@ -1,6 +1,5 @@
 import { TBA } from "@/lib/tbaService";
 
-export const revalidate = 3600; // ISR: revalidate every hour
 
 type EventState = "upcoming" | "in_progress" | "complete";
 

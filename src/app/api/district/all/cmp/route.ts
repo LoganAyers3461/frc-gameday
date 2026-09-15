@@ -1,8 +1,5 @@
 import { TBA } from "@/lib/tbaService";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 86400;
-
 export async function GET() {
   const year = new Date().getFullYear();
 
