@@ -251,6 +251,23 @@ export const TBA = {
             `/event/${eventKey}/matches/simple`
         ),
 
+    getNextMatch: async (eventKey: string) => {
+        const matches = (await TBA.getEventMatches(eventKey)) as any[];
+
+        const sorted = [...(matches ?? [])].sort((a, b) => {
+            const ta = a?.predicted_time ?? Infinity;
+            const tb = b?.predicted_time ?? Infinity;
+
+            return ta - tb;
+        });
+
+        return (
+            sorted.find(
+                (match) => match?.actual_time == null
+            ) ?? null
+        );
+    },
+
     /* ------------------ */
     /* 🏆 Districts        */
     /* ------------------ */
