@@ -23,6 +23,19 @@ export type NexusData = {
     dataAsOfTime: number;
     nowQueuing: string;
     matches: NexusMatch[];
-    announcements: unknown[];
-    partsRequests: unknown[];
+    announcements: NexusAnnouncement[];
+    partsRequests: NexusPartsRequest[];
 };
+
+export type NexusAnnouncement = {
+    id: string;
+    postedTime: number;
+    announcement: string;
+}
+
+export type NexusPartsRequest = {
+    id: string;
+    postedTime: number;
+    parts: string;
+    requestedByTeam: number;
+}

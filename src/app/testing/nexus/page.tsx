@@ -1,6 +1,7 @@
 "use client";
 
 import { useNexus } from "@/components/gameday/hooks/useNexus";
+import { NexusData, NexusPartsRequest, NexusAnnouncement } from "@/lib/nexus/types";
 
 export default function NexusTest() {
     const {
@@ -41,7 +42,14 @@ export default function NexusTest() {
             <p>
                 <strong>Announcements:</strong> {nexusData.announcements.entries().map(([key, value]) => (
                     <div key={key}>
-                        <strong>{value.announcement}:</strong> {Date(value.postedTime).toLocaleString()}
+                        <strong>{nexusData.announcements[key].announcement}:</strong> {new Date(nexusData.announcements[key].postedTime).toLocaleString()}
+                    </div>
+                ))}
+            </p>
+            <p>
+                <strong>Parts Requests:</strong> {nexusData.partsRequests.entries().map(([key, value]) => (
+                    <div key={key}>
+                        <strong>{nexusData.partsRequests[key].parts}:</strong> {new Date(nexusData.partsRequests[key].postedTime).toLocaleString()} (Requested by Team {nexusData.partsRequests[key].requestedByTeam})
                     </div>
                 ))}
             </p>
