@@ -5,7 +5,6 @@ import { redis } from "@/lib/redis";
 type CacheEntry = {
     data: unknown;
     etag: string | null;
-    expiresAt: number;
 };
 
 function norm(endpoint: string) {
@@ -14,6 +13,10 @@ function norm(endpoint: string) {
 
 function cacheKey(endpoint: string) {
     return `cache${norm(endpoint)}`;
+}
+
+function etagKey(endpoint: string) {
+    return `etag${norm(endpoint)}`;
 }
 
 function tagKey(tag: string) {
@@ -33,7 +36,9 @@ function deriveTags(endpoint: string): string[] {
         tags.push(`event:${eventKey}`);
 
         if (parts[eventIdx + 2]) {
-            tags.push(`event:${eventKey}:${parts[eventIdx + 2]}`);
+            tags.push(
+                `event:${eventKey}:${parts[eventIdx + 2]}`
+            );
         }
     }
 
@@ -56,22 +61,6 @@ function getMaxAge(cacheControl: string | null): number | null {
     return match ? Number(match[1]) : null;
 }
 
-function getExpiresAt(cacheControl: string | null): number {
-    const maxAge = getMaxAge(cacheControl);
-
-    if (maxAge === null) {
-        /*
-         * No Cache-Control max-age means we don't know how
-         * long TBA considers this representation fresh.
-         *
-         * Do not invent a TTL here.
-         */
-        return Date.now();
-    }
-
-    return Date.now() + maxAge * 1000;
-}
-
 export class TBAClient {
     constructor(private authKey: string) {}
 
@@ -86,13 +75,18 @@ export class TBAClient {
 
         for (const cache of members) {
             pipeline.del(cache);
+
+            const endpoint = cache.replace(/^cache/, "");
+            pipeline.del(etagKey(endpoint));
         }
 
         pipeline.del(key);
 
         await pipeline.exec();
 
-        console.log(`[TBA][Client] invalidated tag ${tag}`);
+        console.log(
+            `[TBA][Client] invalidated tag ${tag}`
+        );
     }
 
     async get(
@@ -102,11 +96,15 @@ export class TBAClient {
         }
     ) {
         const cKey = cacheKey(endpoint);
+        const eKey = etagKey(endpoint);
         const tags = deriveTags(endpoint);
 
         /*
-         * Redis is the only application cache.
+         * --------------------------------------------------
+         * Redis cache
+         * --------------------------------------------------
          */
+
         const cachedRaw = await redis.get(cKey);
 
         let cached: CacheEntry | null = null;
@@ -124,44 +122,57 @@ export class TBAClient {
         }
 
         /*
-         * Fresh Redis data requires no request to TBA.
+         * If Redis has the entry, its TTL has not expired.
+         *
+         * Therefore the cached data is still within the
+         * freshness period provided by TBA.
          */
-        if (
-            cached &&
-            !options?.forceRefresh &&
-            Date.now() < cached.expiresAt
-        ) {
-            console.log(`[TBA][Client] Redis cache hit for ${endpoint}`);
+        if (cached && !options?.forceRefresh) {
+            console.log(
+                `[TBA][Client] Redis cache hit for ${endpoint}`
+            );
 
             return cached.data;
         }
 
         /*
-         * Redis entry is missing or stale.
-         *
-         * If we have an ETag, ask TBA whether our stale
-         * representation is still current.
+         * --------------------------------------------------
+         * TBA request
+         * --------------------------------------------------
          */
+
         const headers: Record<string, string> = {
             "X-TBA-Auth-Key": this.authKey,
         };
 
-        if (cached?.etag && !options?.forceRefresh) {
-            headers["If-None-Match"] = cached.etag;
+        /*
+         * Use the stored ETag when validating an expired
+         * Redis entry.
+         */
+        const etag = await redis.get(eKey);
+
+        if (etag && !options?.forceRefresh) {
+            headers["If-None-Match"] = etag;
 
             console.log(
                 `[TBA][Client] validating cached entry for ${endpoint}`
             );
         }
 
-        const res = await fetch(`${BASE_URL}${endpoint}`, {
-            headers,
-            cache: "no-store",
-        });
+        const res = await fetch(
+            `${BASE_URL}${endpoint}`,
+            {
+                headers,
+                cache: "no-store",
+            }
+        );
 
         /*
-         * TBA says our cached representation is still current.
+         * --------------------------------------------------
+         * 304 Not Modified
+         * --------------------------------------------------
          */
+
         if (res.status === 304) {
             if (!cached) {
                 throw new Error(
@@ -169,46 +180,83 @@ export class TBAClient {
                 );
             }
 
-            const refreshed: CacheEntry = {
-                ...cached,
-                expiresAt: getExpiresAt(
-                    res.headers.get("Cache-Control")
-                ),
-            };
+            const maxAge = getMaxAge(
+                res.headers.get("Cache-Control")
+            );
 
+            if (maxAge === null) {
+                throw new Error(
+                    `[TBA][Client] 304 response for ${endpoint} did not provide Cache-Control max-age`
+                );
+            }
+
+            /*
+             * The data has not changed.
+             *
+             * Re-store it with TBA's newly supplied TTL.
+             */
             await redis.set(
                 cKey,
-                JSON.stringify(refreshed)
+                JSON.stringify(cached),
+                "EX",
+                maxAge
             );
 
             console.log(
-                `[TBA][Client] 304 Not Modified for ${endpoint}`
+                `[TBA][Client] 304 Not Modified for ${endpoint}; TTL ${maxAge}s`
             );
 
             return cached.data;
         }
 
         /*
-         * TBA returned a new representation.
+         * --------------------------------------------------
+         * 200 OK
+         * --------------------------------------------------
          */
+
         if (res.ok) {
             const data = await res.json();
 
+            const maxAge = getMaxAge(
+                res.headers.get("Cache-Control")
+            );
+
+            if (maxAge === null) {
+                throw new Error(
+                    `[TBA][Client] response for ${endpoint} did not provide Cache-Control max-age`
+                );
+            }
+
+            const newEtag = res.headers.get("ETag");
+
             const entry: CacheEntry = {
                 data,
-                etag: res.headers.get("ETag"),
-                expiresAt: getExpiresAt(
-                    res.headers.get("Cache-Control")
-                ),
+                etag: newEtag,
             };
 
+            /*
+             * Redis TTL comes directly from TBA's
+             * Cache-Control max-age.
+             */
             await redis.set(
                 cKey,
-                JSON.stringify(entry)
+                JSON.stringify(entry),
+                "EX",
+                maxAge
             );
 
             /*
-             * Register this cache entry with its invalidation tags.
+             * Keep the ETag separately so we can still
+             * validate the representation after the cache
+             * entry expires.
+             */
+            if (newEtag) {
+                await redis.set(eKey, newEtag);
+            }
+
+            /*
+             * Register the cache entry with its tags.
              */
             if (tags.length) {
                 const pipeline = redis.pipeline();
@@ -224,7 +272,7 @@ export class TBAClient {
             }
 
             console.log(
-                `[TBA][Client] Redis cache updated for ${endpoint}`
+                `[TBA][Client] Redis cache updated for ${endpoint}; TTL ${maxAge}s`
             );
 
             return data;
