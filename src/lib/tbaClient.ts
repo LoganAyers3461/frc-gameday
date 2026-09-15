@@ -5,6 +5,7 @@ import { redis } from "@/lib/redis";
 type CacheEntry = {
     data: unknown;
     etag: string | null;
+    expiresAt: number;
 };
 
 function norm(endpoint: string) {
@@ -13,10 +14,6 @@ function norm(endpoint: string) {
 
 function cacheKey(endpoint: string) {
     return `cache${norm(endpoint)}`;
-}
-
-function etagKey(endpoint: string) {
-    return `etag${norm(endpoint)}`;
 }
 
 function tagKey(tag: string) {
@@ -75,9 +72,6 @@ export class TBAClient {
 
         for (const cache of members) {
             pipeline.del(cache);
-
-            const endpoint = cache.replace(/^cache/, "");
-            pipeline.del(etagKey(endpoint));
         }
 
         pipeline.del(key);
@@ -96,7 +90,6 @@ export class TBAClient {
         }
     ) {
         const cKey = cacheKey(endpoint);
-        const eKey = etagKey(endpoint);
         const tags = deriveTags(endpoint);
 
         /*
@@ -122,12 +115,22 @@ export class TBAClient {
         }
 
         /*
-         * If Redis has the entry, its TTL has not expired.
+         * --------------------------------------------------
+         * Fresh cache hit
+         * --------------------------------------------------
          *
-         * Therefore the cached data is still within the
-         * freshness period provided by TBA.
+         * TBA's max-age determines expiresAt.
+         *
+         * The Redis key itself does NOT expire here because
+         * stale data must remain available for ETag
+         * validation.
          */
-        if (cached && !options?.forceRefresh) {
+
+        if (
+            cached &&
+            !options?.forceRefresh &&
+            Date.now() < cached.expiresAt
+        ) {
             console.log(
                 `[TBA][Client] Redis cache hit for ${endpoint}`
             );
@@ -146,13 +149,14 @@ export class TBAClient {
         };
 
         /*
-         * Use the stored ETag when validating an expired
-         * Redis entry.
+         * If stale data exists, validate it with TBA's ETag.
          */
-        const etag = await redis.get(eKey);
 
-        if (etag && !options?.forceRefresh) {
-            headers["If-None-Match"] = etag;
+        if (
+            cached?.etag &&
+            !options?.forceRefresh
+        ) {
+            headers["If-None-Match"] = cached.etag;
 
             console.log(
                 `[TBA][Client] validating cached entry for ${endpoint}`
@@ -190,20 +194,18 @@ export class TBAClient {
                 );
             }
 
-            /*
-             * The data has not changed.
-             *
-             * Re-store it with TBA's newly supplied TTL.
-             */
+            const refreshed: CacheEntry = {
+                ...cached,
+                expiresAt: Date.now() + maxAge * 1000,
+            };
+
             await redis.set(
                 cKey,
-                JSON.stringify(cached),
-                "EX",
-                maxAge
+                JSON.stringify(refreshed)
             );
 
             console.log(
-                `[TBA][Client] 304 Not Modified for ${endpoint}; TTL ${maxAge}s`
+                `[TBA][Client] 304 Not Modified for ${endpoint}; freshness ${maxAge}s`
             );
 
             return cached.data;
@@ -228,36 +230,29 @@ export class TBAClient {
                 );
             }
 
-            const newEtag = res.headers.get("ETag");
-
             const entry: CacheEntry = {
                 data,
-                etag: newEtag,
+                etag: res.headers.get("ETag"),
+                expiresAt: Date.now() + maxAge * 1000,
             };
 
             /*
-             * Redis TTL comes directly from TBA's
-             * Cache-Control max-age.
+             * No Redis TTL here.
+             *
+             * expiresAt controls freshness while the
+             * representation remains available for
+             * conditional validation.
              */
+
             await redis.set(
                 cKey,
-                JSON.stringify(entry),
-                "EX",
-                maxAge
+                JSON.stringify(entry)
             );
 
             /*
-             * Keep the ETag separately so we can still
-             * validate the representation after the cache
-             * entry expires.
+             * Register this cache entry with its tags.
              */
-            if (newEtag) {
-                await redis.set(eKey, newEtag);
-            }
 
-            /*
-             * Register the cache entry with its tags.
-             */
             if (tags.length) {
                 const pipeline = redis.pipeline();
 
@@ -272,7 +267,7 @@ export class TBAClient {
             }
 
             console.log(
-                `[TBA][Client] Redis cache updated for ${endpoint}; TTL ${maxAge}s`
+                `[TBA][Client] Redis cache updated for ${endpoint}; freshness ${maxAge}s`
             );
 
             return data;
