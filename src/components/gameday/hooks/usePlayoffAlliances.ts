@@ -1,45 +1,52 @@
-import { useEffect, useState, useCallback } from "react";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { usePolling } from "./usePolling";
 
 export function usePlayoffAlliances(eventKey: string) {
-  const [alliances, setAlliances] = useState([]);
-  const REFRESH_MS = 3 * 60 * 1000;
+  const [alliances, setAlliances] = useState<any[]>([]);
 
   const load = useCallback(async () => {
     if (!eventKey) return;
 
     try {
-      const res = await fetch(`/api/event/${eventKey}/playoffs/alliances`);
-      if (!res.ok) throw new Error("Alliances fetch failed");
+      const res = await fetch(
+        `/api/event/${eventKey}/playoffs/alliances`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(
+          `Alliances request failed: ${res.status}`
+        );
+      }
 
       const json = await res.json();
-      setAlliances(json);
+
+      setAlliances(Array.isArray(json) ? json : []);
     } catch (err) {
-      console.error("useAlliances error:", err);
+      console.error("usePlayoffAlliances error:", err);
       setAlliances([]);
     }
   }, [eventKey]);
 
-  useEffect(() => {
-    if (!eventKey) return;
-
-    let cancelled = false;
-
-    async function safeLoad() {
-      if (cancelled) return;
-      await load();
+  const { poll: reload } = usePolling(
+    load,
+    "intermediate",
+    {
+      enabled: Boolean(eventKey),
+      resetKey: eventKey,
     }
+  );
 
-    safeLoad();
-    const intervalId = setInterval(safeLoad, REFRESH_MS);
-
-    return () => {
-      cancelled = true;
-      clearInterval(intervalId);
-    };
-  }, [load]);
+  useEffect(() => {
+    setAlliances([]);
+  }, [eventKey]);
 
   return {
     alliances,
-    reload: load, // ✅ now works
+    reload,
   };
 }

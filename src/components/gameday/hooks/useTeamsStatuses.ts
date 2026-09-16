@@ -1,40 +1,55 @@
-import { useEffect, useState, useCallback } from "react";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { usePolling } from "./usePolling";
 
 export function useTeamsStatuses(eventKey: string) {
-  const [teamsStatuses, setTeams] = useState<any[]>([]);
+  const [teamsStatuses, setTeamsStatuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const REFRESH_MS = 20 * 1000;
 
   const load = useCallback(async () => {
     if (!eventKey) return;
 
     try {
-      const res = await fetch(`/api/event/${eventKey}/teams/statuses`);
+      const res = await fetch(
+        `/api/event/${eventKey}/teams/statuses`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
       const json = await res.json();
 
-      setTeams(json.teams ?? json);
+      setTeamsStatuses(json.teams ?? json);
     } catch (err) {
       console.error("useTeamsStatuses error:", err);
-      setTeams([]);
+      setTeamsStatuses([]);
     } finally {
       setLoading(false);
     }
   }, [eventKey]);
 
+  const { poll: reload } = usePolling(
+    load,
+    "intermediate",
+    {
+      enabled: Boolean(eventKey),
+      resetKey: eventKey,
+    }
+  );
+
   useEffect(() => {
-    if (!eventKey) return;
-
-    let intervalId: NodeJS.Timeout;
-
-    load();
-    intervalId = setInterval(load, REFRESH_MS);
-
-    return () => clearInterval(intervalId);
-  }, [load]);
+    setTeamsStatuses([]);
+    setLoading(Boolean(eventKey));
+  }, [eventKey]);
 
   return {
     teamsStatuses,
     loading,
-    reload: load,
+    reload,
   };
 }

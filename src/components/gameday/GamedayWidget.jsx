@@ -17,6 +17,7 @@ import StreamModal from "./StreamModal";
 import MatchStrip from "./navbar/MatchStrip";
 import EventStatsSideBar from "./EventStatsSideBar";
 import TeamModal from "./teamElements/TeamModal";
+import TeamTracker from "./teamElements/TeamTracker";
 
 import { buildStreams } from "@/lib/gameday/buildStreams";
 
@@ -28,295 +29,6 @@ import { useTeams } from "./hooks/useTeams";
 import { usePlayoffAlliances } from "./hooks/usePlayoffAlliances";
 import { useTeamsStatuses } from "./hooks/useTeamsStatuses";
 
-function teamNumber(key) {
-  return String(key || "").replace(
-    /^frc/i,
-    ""
-  );
-}
-
-function teamStatusSummary(
-  status,
-  teamCount
-) {
-  const ranking = status?.qual?.ranking;
-
-  if (!ranking) {
-    return {
-      record: "—",
-      rank: "—",
-    };
-  }
-
-  const record = ranking.record;
-
-  const wins = record?.wins ?? 0;
-  const losses = record?.losses ?? 0;
-  const ties = record?.ties ?? 0;
-
-  return {
-    record: `${wins}-${losses}-${ties}`,
-    rank:
-      ranking.rank != null
-        ? `#${ranking.rank}/${
-            teamCount || "?"
-          }`
-        : "—",
-  };
-}
-
-function compactNextMatch(match) {
-  if (!match) return null;
-
-  const level = String(
-    match.comp_level || ""
-  ).toLowerCase();
-
-  const number =
-    match.match_number ?? "";
-
-  const set = match.set_number;
-
-  switch (level) {
-    case "qm":
-      return `Q${number}`;
-
-    case "ef":
-      return set != null
-        ? `EF${set}-${number}`
-        : `EF${number}`;
-
-    case "qf":
-      return set != null
-        ? `QF${set}-${number}`
-        : `QF${number}`;
-
-    case "sf":
-      return set != null
-        ? `SF${set}-${number}`
-        : `SF${number}`;
-
-    case "f":
-      return `F${number}`;
-
-    default:
-      return level
-        ? `${level.toUpperCase()}${number}`
-        : null;
-  }
-}
-
-function minutesUntil(timestamp) {
-  if (!timestamp) return null;
-
-  const seconds = Math.round(
-    (timestamp * 1000 - Date.now()) /
-      1000
-  );
-
-  if (
-    seconds < 0 ||
-    seconds > 60 * 60
-  ) {
-    return null;
-  }
-
-  if (seconds < 60) {
-    return `${Math.max(
-      0,
-      seconds
-    )}s`;
-  }
-
-  return `${Math.ceil(
-    seconds / 60
-  )}m`;
-}
-
-function TeamPill({
-  team,
-  status,
-  teamCount,
-  nextMatch,
-}) {
-  const [now, setNow] = useState(
-    () => Date.now()
-  );
-
-  useEffect(() => {
-    if (!nextMatch?.predicted_time) {
-      return;
-    }
-
-    const id =
-      window.setInterval(
-        () => setNow(Date.now()),
-        1000
-      );
-
-    return () =>
-      window.clearInterval(id);
-  }, [
-    nextMatch?.predicted_time,
-  ]);
-
-  const summary =
-    teamStatusSummary(
-      status,
-      teamCount
-    );
-
-  const countdown =
-    nextMatch?.predicted_time
-      ? minutesUntil(
-          nextMatch.predicted_time
-        )
-      : null;
-
-  void now;
-
-  return (
-    <div className="pointer-events-auto flex h-7 items-center gap-1.5 rounded-md border border-white/10 bg-neutral-950/90 px-2 shadow-lg backdrop-blur">
-      <span className="font-mono text-[11px] font-bold text-white">
-        {teamNumber(team)}
-      </span>
-
-      <span className="font-mono text-[9px] text-neutral-400">
-        {summary.record}
-      </span>
-
-      <span className="font-mono text-[9px] text-neutral-500">
-        {summary.rank}
-      </span>
-
-      {nextMatch && (
-        <>
-          <span className="h-3 w-px bg-white/10" />
-
-          <span className="font-mono text-[10px] font-bold text-white">
-            {compactNextMatch(
-              nextMatch
-            )}
-          </span>
-
-          {countdown && (
-            <span
-              className={[
-                "font-mono text-[9px] tabular-nums",
-                countdown === "0s"
-                  ? "font-bold text-white"
-                  : "text-neutral-400",
-              ].join(" ")}
-            >
-              {countdown}
-            </span>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-function TeamTracker({
-  teams,
-  teamsStatuses,
-  teamCount,
-  nextMatches,
-  position,
-}) {
-  if (!teams.length) {
-    return null;
-  }
-
-  if (position === "bottom") {
-    return (
-      <div className="pointer-events-none absolute bottom-2 left-0 right-0 z-40 flex justify-center">
-        <div className="pointer-events-auto flex max-w-[calc(100%-1rem)] min-w-0 gap-1 overflow-x-auto overflow-y-hidden px-1 no-scrollbar">
-          {teams.map((team) => (
-            <TeamPill
-              key={team}
-              team={team}
-              status={
-                teamsStatuses?.[team]
-              }
-              teamCount={teamCount}
-              nextMatch={
-                nextMatches[team]
-              }
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-  if (position === "top") {
-    return (
-      <div className="pointer-events-none absolute top-2 left-0 right-0 z-40 flex justify-center">
-        <div className="pointer-events-auto flex max-w-[calc(100%-1rem)] min-w-0 gap-1 overflow-x-auto overflow-y-hidden px-1 no-scrollbar">
-          {teams.map((team) => (
-            <TeamPill
-              key={team}
-              team={team}
-              status={
-                teamsStatuses?.[team]
-              }
-              teamCount={teamCount}
-              nextMatch={
-                nextMatches[team]
-              }
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-40">
-      <div className="absolute left-2 top-1/2 flex max-w-[calc(50%-1rem)] -translate-y-1/2 flex-col gap-1">
-        {teams
-          .filter(
-            (_, index) =>
-              index % 2 === 0
-          )
-          .map((team) => (
-            <TeamPill
-              key={team}
-              team={team}
-              status={
-                teamsStatuses?.[team]
-              }
-              teamCount={teamCount}
-              nextMatch={
-                nextMatches[team]
-              }
-            />
-          ))}
-      </div>
-
-      <div className="absolute right-2 top-1/2 flex max-w-[calc(50%-1rem)] -translate-y-1/2 flex-col items-end gap-1">
-        {teams
-          .filter(
-            (_, index) =>
-              index % 2 === 1
-          )
-          .map((team) => (
-            <TeamPill
-              key={team}
-              team={team}
-              status={
-                teamsStatuses?.[team]
-              }
-              teamCount={teamCount}
-              nextMatch={
-                nextMatches[team]
-              }
-            />
-          ))}
-      </div>
-    </div>
-  );
-}
-
 export default function GamedayWidget({
   event,
   initialTeams = [],
@@ -324,14 +36,19 @@ export default function GamedayWidget({
   isDivisional = false,
   multiview = {},
 }) {
+  /*
+   * =========================
+   * EVENT DATA
+   * =========================
+   */
+
   const {
     event: eventData,
     loading: eventLoading,
     error: eventError,
   } = useEvent(event);
 
-  const { teams } =
-    useTeams(event);
+  const { teams } = useTeams(event);
 
   const {
     teamsStatuses,
@@ -341,9 +58,7 @@ export default function GamedayWidget({
   const {
     alliances: playoffAlliances,
     reload: reloadAlliances,
-  } = usePlayoffAlliances(
-    event
-  );
+  } = usePlayoffAlliances(event);
 
   const {
     matches,
@@ -352,11 +67,95 @@ export default function GamedayWidget({
     reload: reloadMatches,
   } = useMatches(event);
 
+  /*
+   * =========================
+   * TRACKED TEAMS
+   * =========================
+   */
+
   const [trackedTeams, setTrackedTeams] =
     useState(initialTeams);
 
-  const [rawStreams, setRawStreams] =
-    useState([]);
+  const {
+    trackedMatches,
+    trackedNextMatch,
+    trackedLastMatch,
+    trackedNextMatches,
+  } = useTrackedMatches(
+    matches,
+    trackedTeams
+  );
+
+  const teamMode = trackedTeams.length > 0;
+
+  const nextMatch = teamMode
+    ? trackedNextMatch
+    : eventNextMatch;
+
+  const lastMatch = teamMode
+    ? trackedLastMatch
+    : eventLastMatch;
+
+  const displayMatches = teamMode
+    ? trackedMatches
+    : matches;
+
+  /*
+   * =========================
+   * STREAMS
+   * =========================
+   */
+
+  const [rawStreams, setRawStreams] = useState([]);
+
+  useEffect(() => {
+    if (!eventData) {
+      return;
+    }
+
+    registerLabel?.(
+      eventData.short_name ||
+        eventData.name ||
+        eventData.key
+    );
+  }, [eventData, registerLabel]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!eventData?.webcasts) {
+      setRawStreams([]);
+      return;
+    }
+
+    buildStreams(eventData.webcasts).then(
+      (streams) => {
+        if (!cancelled) {
+          setRawStreams(streams);
+        }
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [eventData?.webcasts]);
+
+  const {
+    streams,
+    activeStream,
+    activeKey,
+    setActiveKey,
+  } = useStreamController(
+    rawStreams,
+    eventData?.timezone
+  );
+
+  /*
+   * =========================
+   * UI STATE
+   * =========================
+   */
 
   const [settingsOpen, setSettingsOpen] =
     useState(false);
@@ -373,105 +172,50 @@ export default function GamedayWidget({
   const [chatOpen, setChatOpen] =
     useState(false);
 
-  const {
-    trackedMatches,
-    trackedNextMatch,
-    trackedLastMatch,
-  } = useTrackedMatches(
-    matches,
-    trackedTeams
-  );
+  /*
+   * =========================
+   * TEAM DISPLAY DATA
+   * =========================
+   */
 
-  const teamMode =
-    trackedTeams.length > 0;
-
-  const nextMatch = teamMode
-    ? trackedNextMatch
-    : eventNextMatch;
-
-  const lastMatch = teamMode
-    ? trackedLastMatch
-    : eventLastMatch;
-
-  const displayMatches = teamMode
-    ? trackedMatches
-    : matches;
+  const teamCount = useMemo(() => {
+    return (
+      Object.keys(teamsStatuses || {}).length ||
+      teams?.length ||
+      0
+    );
+  }, [teamsStatuses, teams]);
 
   const teamTrackerPosition =
-    multiview?.teamTracker ??
-    "sides";
+    multiview?.teamTracker ?? "sides";
 
-  useEffect(() => {
-    if (!eventData) return;
+  /*
+   * =========================
+   * TEAM ACTIONS
+   * =========================
+   */
 
-    registerLabel?.(
-      eventData.short_name ||
-        eventData.name ||
-        eventData.key
-    );
-  }, [
-    eventData,
-    registerLabel,
-  ]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!eventData?.webcasts) {
-      setRawStreams([]);
-      return;
-    }
-
-    buildStreams(
-      eventData.webcasts
-    ).then((streams) => {
-      if (!cancelled) {
-        setRawStreams(streams);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    eventData?.webcasts,
-  ]);
-
-  const {
-    streams,
-    activeStream,
-    activeKey,
-    setActiveKey,
-  } = useStreamController(
-    rawStreams,
-    eventData?.timezone
-  );
-
-  function addTrackedTeam(
-    teamKey
-  ) {
-    setTrackedTeams(
-      (previous) =>
-        previous.includes(teamKey)
-          ? previous
-          : [
-              ...previous,
-              teamKey,
-            ]
+  function addTrackedTeam(teamKey) {
+    setTrackedTeams((previous) =>
+      previous.includes(teamKey)
+        ? previous
+        : [...previous, teamKey]
     );
   }
 
-  function removeTrackedTeam(
-    teamKey
-  ) {
-    setTrackedTeams(
-      (previous) =>
-        previous.filter(
-          (key) =>
-            key !== teamKey
-        )
+  function removeTrackedTeam(teamKey) {
+    setTrackedTeams((previous) =>
+      previous.filter(
+        (key) => key !== teamKey
+      )
     );
   }
+
+  /*
+   * =========================
+   * DATA REFRESH
+   * =========================
+   */
 
   function reloadDataSources() {
     reloadMatches();
@@ -482,18 +226,23 @@ export default function GamedayWidget({
   useEffect(() => {
     const onKeyDown = (event) => {
       if (
-        event.key.toLowerCase() ===
-          "r" &&
-        ![
-          "INPUT",
-          "TEXTAREA",
-        ].includes(
-          document.activeElement
-            ?.tagName || ""
+        event.key.toLowerCase() !== "r"
+      ) {
+        return;
+      }
+
+      const activeElement =
+        document.activeElement;
+
+      if (
+        ["INPUT", "TEXTAREA", "SELECT"].includes(
+          activeElement?.tagName || ""
         )
       ) {
-        reloadDataSources();
+        return;
       }
+
+      reloadDataSources();
     };
 
     window.addEventListener(
@@ -512,74 +261,11 @@ export default function GamedayWidget({
     reloadStatuses,
   ]);
 
-  const teamCount = useMemo(
-    () =>
-      Object.keys(
-        teamsStatuses || {}
-      ).length ||
-      teams?.length ||
-      0,
-    [
-      teamsStatuses,
-      teams,
-    ]
-  );
-
-  const trackedTeamNextMatches =
-    useMemo(() => {
-      const result = {};
-
-      for (const team of trackedTeams) {
-        const candidate =
-          matches
-            ?.filter((match) => {
-              if (
-                !match?.key ||
-                !match?.predicted_time
-              ) {
-                return false;
-              }
-
-              const teamsInMatch = [
-                ...(match
-                  .alliances
-                  ?.red
-                  ?.team_keys ||
-                  []),
-                ...(match
-                  .alliances
-                  ?.blue
-                  ?.team_keys ||
-                  []),
-              ];
-
-              return (
-                teamsInMatch.includes(
-                  team
-                ) &&
-                match.predicted_time *
-                    1000 >=
-                  Date.now() -
-                    60_000
-              );
-            })
-            .sort(
-              (a, b) =>
-                (a.predicted_time ||
-                  Infinity) -
-                (b.predicted_time ||
-                  Infinity)
-            )[0];
-
-        result[team] =
-          candidate || null;
-      }
-
-      return result;
-    }, [
-      matches,
-      trackedTeams,
-    ]);
+  /*
+   * =========================
+   * LOADING / ERROR STATES
+   * =========================
+   */
 
   if (eventLoading) {
     return (
@@ -589,10 +275,7 @@ export default function GamedayWidget({
     );
   }
 
-  if (
-    eventError ||
-    !eventData
-  ) {
+  if (eventError || !eventData) {
     return (
       <div className="flex h-full items-center justify-center bg-black text-center text-sm text-neutral-500">
         <div>
@@ -608,26 +291,25 @@ export default function GamedayWidget({
     );
   }
 
+  /*
+   * =========================
+   * MAIN EVENT VIEW
+   * =========================
+   */
+
   return (
     <section className="relative flex h-full min-h-0 flex-col overflow-hidden bg-black">
       {/* =========================
-          TRACKED TEAM STATUS
+          TEAM TRACKER
       ========================== */}
 
-      {trackedTeams.length >
-        0 && (
+      {trackedTeams.length > 0 && (
         <TeamTracker
           teams={trackedTeams}
-          teamsStatuses={
-            teamsStatuses
-          }
+          teamsStatuses={teamsStatuses}
           teamCount={teamCount}
-          nextMatches={
-            trackedTeamNextMatches
-          }
-          position={
-            teamTrackerPosition
-          }
+          nextMatches={trackedNextMatches}
+          position={teamTrackerPosition}
         />
       )}
 
@@ -637,6 +319,7 @@ export default function GamedayWidget({
 
       <div className="absolute left-2 top-2 z-50">
         <button
+          type="button"
           title="Settings"
           aria-label="Settings"
           onClick={() =>
@@ -647,9 +330,7 @@ export default function GamedayWidget({
           className={[
             "icon-button",
             "rounded-md border border-white/10 bg-neutral-950/85 shadow-lg backdrop-blur",
-            settingsOpen
-              ? "active"
-              : "",
+            settingsOpen ? "active" : "",
           ].join(" ")}
         >
           <Cog6ToothIcon />
@@ -658,44 +339,43 @@ export default function GamedayWidget({
         {settingsOpen && (
           <div className="absolute left-0 top-full mt-1 flex flex-col gap-1 rounded-lg border border-neutral-700 bg-neutral-900 p-1 shadow-xl">
             <button
+              type="button"
               title="Event rankings"
+              aria-label="Event rankings"
               onClick={() =>
                 setStatsOpen(
-                  (value) =>
-                    !value
+                  (value) => !value
                 )
               }
-              className={`icon-button ${
-                statsOpen
-                  ? "active"
-                  : ""
-              }`}
+              className={[
+                "icon-button",
+                statsOpen ? "active" : "",
+              ].join(" ")}
             >
               <ChartBarIcon />
             </button>
 
             <button
+              type="button"
               title="Track teams"
+              aria-label="Track teams"
               onClick={() =>
-                setTeamModalOpen(
-                  true
-                )
+                setTeamModalOpen(true)
               }
-              className={`icon-button ${
-                teamMode
-                  ? "active"
-                  : ""
-              }`}
+              className={[
+                "icon-button",
+                teamMode ? "active" : "",
+              ].join(" ")}
             >
               <UserGroupIcon />
             </button>
 
             <button
+              type="button"
               title="Choose webcast"
+              aria-label="Choose webcast"
               onClick={() =>
-                setStreamModalOpen(
-                  true
-                )
+                setStreamModalOpen(true)
               }
               className="icon-button"
             >
@@ -703,27 +383,27 @@ export default function GamedayWidget({
             </button>
 
             <button
+              type="button"
               title="Open chat"
+              aria-label="Open chat"
               onClick={() =>
                 setChatOpen(
-                  (value) =>
-                    !value
+                  (value) => !value
                 )
               }
-              className={`icon-button ${
-                chatOpen
-                  ? "active"
-                  : ""
-              }`}
+              className={[
+                "icon-button",
+                chatOpen ? "active" : "",
+              ].join(" ")}
             >
               <ChatBubbleLeftRightIcon />
             </button>
 
             <button
+              type="button"
               title="Refresh event data"
-              onClick={
-                reloadDataSources
-              }
+              aria-label="Refresh event data"
+              onClick={reloadDataSources}
               className="icon-button"
             >
               <ArrowPathIcon />
@@ -737,20 +417,18 @@ export default function GamedayWidget({
       ========================== */}
 
       <div className="relative min-h-0 flex-1">
-        <StreamView
-          stream={activeStream}
-        />
+        <StreamView stream={activeStream} />
 
         {!activeStream && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="rounded-xl border border-white/10 bg-neutral-950/90 px-5 py-4 text-center">
-              <div className="font-semibold">
+              <div className="font-semibold text-white">
                 No webcast available
               </div>
 
               <div className="mt-1 text-xs text-neutral-500">
-                This event has not published
-                a supported live stream.
+                This event has not published a
+                supported live stream.
               </div>
             </div>
           </div>
@@ -758,7 +436,7 @@ export default function GamedayWidget({
       </div>
 
       {/* =========================
-          MATCH INFORMATION
+          MATCH STRIP
       ========================== */}
 
       <footer className="relative z-20 shrink-0">
@@ -767,9 +445,7 @@ export default function GamedayWidget({
           team={trackedTeams}
           nextMatch={nextMatch}
           lastMatch={lastMatch}
-          eventTimezone={
-            eventData.timezone
-          }
+          eventTimezone={eventData.timezone}
           playoffAlliances={
             playoffAlliances
           }
@@ -780,23 +456,19 @@ export default function GamedayWidget({
             eventData.short_name ||
             eventData.name
           }
-          isDivisional={
-            isDivisional
-          }
+          isDivisional={isDivisional}
           multiview={multiview}
         />
       </footer>
 
       {/* =========================
-          STATS
+          EVENT STATS
       ========================== */}
 
       {statsOpen && (
         <div className="absolute inset-y-0 right-0 z-30 w-[min(360px,92vw)] border-l border-white/10 bg-neutral-950 shadow-2xl">
           <EventStatsSideBar
-            teamStatuses={
-              teamsStatuses
-            }
+            teamStatuses={teamsStatuses}
             playoffAlliances={
               playoffAlliances
             }
@@ -811,12 +483,11 @@ export default function GamedayWidget({
       {chatOpen && (
         <div className="absolute inset-y-0 right-0 z-30 w-[min(420px,92vw)] border-l border-white/10 bg-black shadow-2xl">
           <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 text-xs font-semibold">
-              <span>
-                Live chat
-              </span>
+            <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 text-xs font-semibold text-white">
+              <span>Live chat</span>
 
               <button
+                type="button"
                 onClick={() =>
                   setChatOpen(false)
                 }
@@ -841,34 +512,20 @@ export default function GamedayWidget({
 
       <StreamModal
         open={streamModalOpen}
-        setOpen={
-          setStreamModalOpen
-        }
+        setOpen={setStreamModalOpen}
         streams={streams}
         activeKey={activeKey}
-        setActiveKey={
-          setActiveKey
-        }
+        setActiveKey={setActiveKey}
       />
 
       <TeamModal
         open={teamModalOpen}
-        setOpen={
-          setTeamModalOpen
-        }
+        setOpen={setTeamModalOpen}
         teams={teams}
-        teamsStatuses={
-          teamsStatuses
-        }
-        activeTeam={
-          trackedTeams
-        }
-        addTrackedTeam={
-          addTrackedTeam
-        }
-        removeTrackedTeam={
-          removeTrackedTeam
-        }
+        teamsStatuses={teamsStatuses}
+        activeTeam={trackedTeams}
+        addTrackedTeam={addTrackedTeam}
+        removeTrackedTeam={removeTrackedTeam}
       />
     </section>
   );
