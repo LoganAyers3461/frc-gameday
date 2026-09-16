@@ -1,94 +1,50 @@
 import { redis } from "./redis";
 import { TBA } from "./tbaService";
+import type { TBAEliminationAlliance, TBAMatchSimple } from "./tba/types";
 
-function key(event: string) {
-  return `event:${event}:state`;
-}
+export type EventState = {
+  event: string;
+  updatedAt: number;
+  nextMatch: TBAMatchSimple | null;
+  lastMatch: TBAMatchSimple | null;
+  alliances: TBAEliminationAlliance[] | null;
+  matches: TBAMatchSimple[];
+};
 
-/**
- * SOURCE OF TRUTH BUILD (used for hydration + webhook refresh)
- */
-export async function buildEventState(event: string) {
+export async function buildEventState(event: string): Promise<EventState> {
   const matches = await TBA.getEventMatchesSimple(event);
   const alliances = await TBA.getEventPlayoffAlliances(event);
-
-  const sorted = matches.sort(
-    (a: any, b: any) =>
-      (a.predicted_time ?? 0) - (b.predicted_time ?? 0)
-  );
-
-  const next =
-    sorted.find((m: any) => m.actual_time === null) ?? null;
-
-  const last =
-    [...sorted].reverse().find((m: any) => m.actual_time !== null) ?? null;
-
-  return {
-    event,
-    updatedAt: Date.now(),
-    nextMatch: next,
-    lastMatch: last,
-    alliances: alliances || null,
-    matches: sorted,
-  };
+  const sorted = [...matches].sort((a, b) => (a.predicted_time ?? 0) - (b.predicted_time ?? 0));
+  const next = sorted.find((match) => match.actual_time === null) ?? null;
+  const last = [...sorted].reverse().find((match) => match.actual_time !== null) ?? null;
+  return { event, updatedAt: Date.now(), nextMatch: next, lastMatch: last, alliances: alliances ?? null, matches: sorted };
 }
 
-/**
- * WRITE
- */
-export async function setEventState(event: string, state: any) {
-  const key = `state:${event}`;
-
-  await redis.set(key, JSON.stringify(state));
+export async function setEventState(event: string, state: EventState): Promise<void> {
+  await redis.set(`state:${event}`, JSON.stringify(state));
 }
 
-/**
- * READ
- */
-export async function getEventState(event: string) {
-  const key = `state:${event}`;
-
-  const cached = await redis.get(key);
-
+export async function getEventState(event: string): Promise<EventState | null> {
+  const cached = await redis.get(`state:${event}`);
   if (!cached) return null;
-
-  try {
-    return JSON.parse(cached);
-  } catch (e) {
-    console.error("[STATE PARSE ERROR]", e);
-    return null;
-  }
+  try { return JSON.parse(cached) as EventState; }
+  catch (error) { console.error("[STATE PARSE ERROR]", error); return null; }
 }
 
-export function computeNextMatch(matches: any[]) {
+export function computeNextMatch(matches: TBAMatchSimple[]) {
   const now = Date.now() / 1000;
-
-  return (
-    matches
-      .filter((m) => m.actual_time === null)
-      .map((m) => ({
-        ...m,
-        predicted_time: m.predicted_time ?? m.time ?? null,
-      }))
-      .filter((m) => m.predicted_time)
-      .sort((a, b) => a.predicted_time - b.predicted_time)[0] ?? null
-  );
+  return matches
+    .filter((match) => match.actual_time === null)
+    .map((match) => ({ ...match, predicted_time: match.predicted_time ?? match.time ?? null }))
+    .filter((match): match is TBAMatchSimple & { predicted_time: number } => match.predicted_time != null && match.predicted_time >= now)
+    .sort((a, b) => a.predicted_time - b.predicted_time)[0] ?? null;
 }
 
-export async function getAllEventKeys() {
-  // depends on Redis client
-  // example:
-  return await redis.keys("*");
-}
+export async function getAllEventKeys(): Promise<string[]> { return redis.keys("*"); }
 
-export async function getKey(key: string) {
+export async function getKey(key: string): Promise<unknown> {
   const cached = await redis.get(key);
-  
   if (!cached) return null;
-    try {
-        return JSON.parse(cached);
-    } catch (e) {
-        console.error("[STATE PARSE ERROR]", e);
-        return null;
-    }
+  try { return JSON.parse(cached) as unknown; }
+  catch (error) { console.error("[STATE PARSE ERROR]", error); return null; }
 }

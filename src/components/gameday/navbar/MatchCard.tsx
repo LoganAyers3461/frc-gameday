@@ -1,5 +1,6 @@
 "use client";
 
+import { TBAMatch } from "@/lib/tba/types";
 import NextMatchCountdown from "./NextMatchCountdown";
 import { formatAlliance } from "@/lib/tbaFormatters";
 import { formatEventTime } from "@/lib/time";
