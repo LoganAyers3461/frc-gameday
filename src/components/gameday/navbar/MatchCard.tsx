@@ -1,26 +1,9 @@
 "use client";
 
-import { TBAMatch } from "@/lib/tba/types";
+import type { TBAMatch } from "@/lib/tba/types";
 import NextMatchCountdown from "./NextMatchCountdown";
 import { formatAlliance } from "@/lib/tbaFormatters";
 import { formatEventTime } from "@/lib/time";
-
-type MatchAlliance = {
-  team_keys?: string[];
-  score?: number | null;
-};
-
-type Match = {
-  key: string;
-  comp_level: string;
-  match_number: number;
-  set_number?: number | null;
-  predicted_time?: number | null;
-  alliances?: {
-    red?: MatchAlliance;
-    blue?: MatchAlliance;
-  };
-};
 
 type PlayoffAlliance = {
   name?: string;
@@ -28,7 +11,7 @@ type PlayoffAlliance = {
 };
 
 type MatchCardProps = {
-  match: Match;
+  match: TBAMatch;
   team?: string[];
   isNext?: boolean;
   isLast?: boolean;
@@ -38,11 +21,11 @@ type MatchCardProps = {
 };
 
 function compactMatchName(
-  match: Match,
+  match: TBAMatch,
   playoffType: number | null
 ): string {
-  const level = match.comp_level?.toLowerCase() || "";
-  const number = match.match_number ?? "";
+  const level = match.comp_level.toLowerCase();
+  const number = match.match_number;
   const set = match.set_number;
 
   switch (level) {
@@ -65,7 +48,9 @@ function compactMatchName(
           return `Round Robin ${number}`;
 
         default:
-          return set != null ? `SF${set}-${number}` : `SF${number}`;
+          return set != null
+            ? `SF${set}-${number}`
+            : `SF${number}`;
       }
 
     case "f":
@@ -93,8 +78,8 @@ export default function MatchCard({
   playoffType = null,
   eventTimezone,
 }: MatchCardProps) {
-  const red = match.alliances?.red?.team_keys ?? [];
-  const blue = match.alliances?.blue?.team_keys ?? [];
+  const red = match.alliances.red.team_keys;
+  const blue = match.alliances.blue.team_keys;
 
   const trackedRed = red.some((key) => team.includes(key));
   const trackedBlue = blue.some((key) => team.includes(key));
@@ -103,23 +88,26 @@ export default function MatchCard({
 
   const redAlliance = isElimination
     ? playoffAlliances.find((alliance) =>
-        alliance?.picks?.some((pick) => red.includes(pick))
+        alliance.picks?.some((pick) => red.includes(pick))
       ) ?? null
     : null;
 
   const blueAlliance = isElimination
     ? playoffAlliances.find((alliance) =>
-        alliance?.picks?.some((pick) => blue.includes(pick))
+        alliance.picks?.some((pick) => blue.includes(pick))
       ) ?? null
     : null;
 
   const matchName = compactMatchName(match, playoffType);
 
-  const time = isNext && match.predicted_time
-    ? <NextMatchCountdown nextMatch={match} />
-    : match.predicted_time
-      ? formatEventTime(match.predicted_time, eventTimezone)
-      : "TBD";
+  const time =
+    isNext && match.predicted_time != null ? (
+      <NextMatchCountdown nextMatch={match} />
+    ) : match.predicted_time != null ? (
+      formatEventTime(match.predicted_time, eventTimezone)
+    ) : (
+      "TBD"
+    );
 
   return (
     <article
@@ -176,12 +164,12 @@ export default function MatchCard({
         <div
           className={[
             "text-right font-mono text-[10px] tabular-nums",
-            match.alliances?.red?.score != null
+            match.alliances.red.score != null
               ? "font-bold text-red-400"
               : "text-transparent",
           ].join(" ")}
         >
-          {match.alliances?.red?.score ?? "—"}
+          {match.alliances.red.score ?? "—"}
         </div>
 
         {/* Blue alliance */}
@@ -199,12 +187,12 @@ export default function MatchCard({
         <div
           className={[
             "text-right font-mono text-[10px] tabular-nums",
-            match.alliances?.blue?.score != null
+            match.alliances.blue.score != null
               ? "font-bold text-blue-400"
               : "text-transparent",
           ].join(" ")}
         >
-          {match.alliances?.blue?.score ?? "—"}
+          {match.alliances.blue.score ?? "—"}
         </div>
       </div>
     </article>
