@@ -1,21 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowPathIcon,
   ChartBarIcon,
   ChatBubbleLeftRightIcon,
   UserGroupIcon,
   VideoCameraIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 
-import GamedayEventTeamInfo from "./GamedayEventTeamInfo";
 import StreamView from "./StreamView";
 import ChatView from "./ChatView";
 import StreamModal from "./StreamModal";
 import MatchStrip from "./navbar/MatchStrip";
-import EventLocalTime from "./navbar/EventLocalTime";
 import EventStatsSideBar from "./EventStatsSideBar";
 import TeamModal from "./teamElements/TeamModal";
 
@@ -28,7 +26,158 @@ import { useEvent } from "./hooks/useEvent";
 import { useTeams } from "./hooks/useTeams";
 import { usePlayoffAlliances } from "./hooks/usePlayoffAlliances";
 import { useTeamsStatuses } from "./hooks/useTeamsStatuses";
-import { useNexus } from "./hooks/useNexus";
+
+function teamNumber(key) {
+  return String(key || "").replace(/^frc/i, "");
+}
+
+function teamStatusSummary(status, teamCount) {
+  const ranking = status?.qual?.ranking;
+
+  if (!ranking) {
+    return {
+      record: "—",
+      rank: "—",
+    };
+  }
+
+  const record = ranking.record;
+  const wins = record?.wins ?? 0;
+  const losses = record?.losses ?? 0;
+  const ties = record?.ties ?? 0;
+
+  return {
+    record: `${wins}-${losses}-${ties}`,
+    rank:
+      ranking.rank != null
+        ? `#${ranking.rank}/${teamCount || "?"}`
+        : "—",
+  };
+}
+
+function compactNextMatch(match) {
+  if (!match) return null;
+
+  const level = String(match.comp_level || "").toLowerCase();
+  const number = match.match_number ?? "";
+  const set = match.set_number;
+
+  switch (level) {
+    case "qm":
+      return `Q${number}`;
+
+    case "ef":
+      return set != null
+        ? `EF${set}-${number}`
+        : `EF${number}`;
+
+    case "qf":
+      return set != null
+        ? `QF${set}-${number}`
+        : `QF${number}`;
+
+    case "sf":
+      return set != null
+        ? `SF${set}-${number}`
+        : `SF${number}`;
+
+    case "f":
+      return `F${number}`;
+
+    default:
+      return level
+        ? `${level.toUpperCase()}${number}`
+        : null;
+  }
+}
+
+function minutesUntil(timestamp) {
+  if (!timestamp) return null;
+
+  const seconds = Math.round(
+    (timestamp * 1000 - Date.now()) / 1000
+  );
+
+  if (seconds < 0 || seconds > 60 * 60) {
+    return null;
+  }
+
+  if (seconds < 60) {
+    return `${Math.max(0, seconds)}s`;
+  }
+
+  return `${Math.ceil(seconds / 60)}m`;
+}
+
+function TeamPill({
+  team,
+  status,
+  teamCount,
+  nextMatch,
+}) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!nextMatch?.predicted_time) return;
+
+    const id = window.setInterval(
+      () => setNow(Date.now()),
+      1000
+    );
+
+    return () => window.clearInterval(id);
+  }, [nextMatch?.predicted_time]);
+
+  const summary = teamStatusSummary(
+    status,
+    teamCount
+  );
+
+  const countdown = nextMatch?.predicted_time
+    ? minutesUntil(nextMatch.predicted_time)
+    : null;
+
+  void now;
+
+  return (
+    <div className="pointer-events-auto flex h-7 items-center gap-1.5 rounded-md border border-white/10 bg-neutral-950/90 px-2 shadow-lg backdrop-blur">
+      <span className="font-mono text-[11px] font-bold text-white">
+        {teamNumber(team)}
+      </span>
+
+      <span className="font-mono text-[9px] text-neutral-400">
+        {summary.record}
+      </span>
+
+      <span className="font-mono text-[9px] text-neutral-500">
+        {summary.rank}
+      </span>
+
+      {nextMatch && (
+        <>
+          <span className="h-3 w-px bg-white/10" />
+
+          <span className="font-mono text-[10px] font-bold text-white">
+            {compactNextMatch(nextMatch)}
+          </span>
+
+          {countdown && (
+            <span
+              className={[
+                "font-mono text-[9px] tabular-nums",
+                countdown === "0s"
+                  ? "font-bold text-white"
+                  : "text-neutral-400",
+              ].join(" ")}
+            >
+              {countdown}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function GamedayWidget({
   event,
@@ -61,22 +210,34 @@ export default function GamedayWidget({
     reload: reloadMatches,
   } = useMatches(event);
 
-  const { data: nexusData } = useNexus(event);
+  const [trackedTeams, setTrackedTeams] =
+    useState(initialTeams);
 
-  const [trackedTeams, setTrackedTeams] = useState(initialTeams);
   const [rawStreams, setRawStreams] = useState([]);
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [streamModalOpen, setStreamModalOpen] = useState(false);
-  const [teamModalOpen, setTeamModalOpen] = useState(false);
-  const [statsOpen, setStatsOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] =
+    useState(false);
+
+  const [streamModalOpen, setStreamModalOpen] =
+    useState(false);
+
+  const [teamModalOpen, setTeamModalOpen] =
+    useState(false);
+
+  const [statsOpen, setStatsOpen] =
+    useState(false);
+
+  const [chatOpen, setChatOpen] =
+    useState(false);
 
   const {
     trackedMatches,
     trackedNextMatch,
     trackedLastMatch,
-  } = useTrackedMatches(matches, trackedTeams);
+  } = useTrackedMatches(
+    matches,
+    trackedTeams
+  );
 
   const teamMode = trackedTeams.length > 0;
 
@@ -97,8 +258,8 @@ export default function GamedayWidget({
 
     registerLabel?.(
       eventData.short_name ||
-      eventData.name ||
-      eventData.key
+        eventData.name ||
+        eventData.key
     );
   }, [eventData, registerLabel]);
 
@@ -110,11 +271,13 @@ export default function GamedayWidget({
       return;
     }
 
-    buildStreams(eventData.webcasts).then((streams) => {
-      if (!cancelled) {
-        setRawStreams(streams);
+    buildStreams(eventData.webcasts).then(
+      (streams) => {
+        if (!cancelled) {
+          setRawStreams(streams);
+        }
       }
-    });
+    );
 
     return () => {
       cancelled = true;
@@ -156,23 +319,76 @@ export default function GamedayWidget({
       if (
         e.key.toLowerCase() === "r" &&
         !["INPUT", "TEXTAREA"].includes(
-          document.activeElement?.tagName
+          document.activeElement?.tagName || ""
         )
       ) {
         reloadDataSources();
       }
     };
 
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener(
+      "keydown",
+      onKeyDown
+    );
 
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
+    return () =>
+      window.removeEventListener(
+        "keydown",
+        onKeyDown
+      );
   }, [
     reloadMatches,
     reloadAlliances,
     reloadStatuses,
   ]);
+
+  const teamCount = useMemo(
+    () =>
+      Object.keys(
+        teamsStatuses || {}
+      ).length ||
+      teams?.length ||
+      0,
+    [teamsStatuses, teams]
+  );
+
+  const trackedTeamNextMatches = useMemo(() => {
+    const result = {};
+
+    for (const team of trackedTeams) {
+      const candidate = matches
+        ?.filter((match) => {
+          if (
+            !match?.key ||
+            !match?.predicted_time
+          ) {
+            return false;
+          }
+
+          const teamsInMatch = [
+            ...(match.alliances?.red
+              ?.team_keys || []),
+            ...(match.alliances?.blue
+              ?.team_keys || []),
+          ];
+
+          return (
+            teamsInMatch.includes(team) &&
+            match.predicted_time * 1000 >=
+              Date.now() - 60_000
+          );
+        })
+        .sort(
+          (a, b) =>
+            (a.predicted_time || Infinity) -
+            (b.predicted_time || Infinity)
+        )[0];
+
+      result[team] = candidate || null;
+    }
+
+    return result;
+  }, [matches, trackedTeams]);
 
   if (eventLoading) {
     return (
@@ -200,122 +416,110 @@ export default function GamedayWidget({
 
   return (
     <section className="relative flex h-full min-h-0 flex-col overflow-hidden bg-black">
-
-      {/* TOP BAR */}
-      <header className="z-20 flex min-h-12 shrink-0 items-center gap-3 border-b border-white/10 bg-neutral-950/95 px-3 backdrop-blur">
-
-        {/* Event */}
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold">
-            {eventData.short_name || eventData.name}
-          </div>
-
-          { !isDivisional ? (
-            <div className="truncate text-[11px] text-neutral-500">
-              {[
-                eventData.city,
-                eventData.state_prov,
-                eventData.country,
-              ]
-                .filter(Boolean)
-                .join(", ")}
-            </div>
-          ) : ( <div> </div> ) }
-        </div>
-
-          {/* Tracking scope */}
-          <div className="min-w-0 shrink-0">
-            <GamedayEventTeamInfo
-              team={trackedTeams}
+      {/* Floating tracked-team status */}
+      {trackedTeams.length > 0 && (
+        <div className="pointer-events-none absolute left-2 top-2 z-40 flex max-w-[calc(100%-3.5rem)] flex-col gap-1">
+          {trackedTeams.map((team) => (
+            <TeamPill
+              key={team}
+              team={team}
+              status={teamsStatuses?.[team]}
+              teamCount={teamCount}
+              nextMatch={
+                trackedTeamNextMatches[team]
+              }
             />
-          </div>
+          ))}
+        </div>
+      )}
 
-          {/* Settings */}
-          <div className="relative">
+      {/* Floating settings */}
+      <div className="absolute left-2 top-2 z-50">
+        <button
+          title="Settings"
+          aria-label="Settings"
+          onClick={() =>
+            setSettingsOpen(
+              (value) => !value
+            )
+          }
+          className={[
+            "icon-button",
+            "rounded-md border border-white/10 bg-neutral-950/85 shadow-lg backdrop-blur",
+            settingsOpen ? "active" : "",
+          ].join(" ")}
+        >
+          <Cog6ToothIcon />
+        </button>
+
+        {settingsOpen && (
+          <div className="absolute left-0 top-full mt-1 flex flex-col gap-1 rounded-lg border border-neutral-700 bg-neutral-900 p-1 shadow-xl">
             <button
-              title="Settings"
-              onClick={() => setSettingsOpen((value) => !value)}
-              className={`icon-button ${settingsOpen ? "active" : ""}`}
+              title="Event rankings"
+              onClick={() =>
+                setStatsOpen(
+                  (value) => !value
+                )
+              }
+              className={`icon-button ${
+                statsOpen ? "active" : ""
+              }`}
             >
-              <Cog6ToothIcon />
+              <ChartBarIcon />
             </button>
 
-              {settingsOpen && (
-                <div className="absolute top-full right-0 z-50 mt-2 flex flex-col gap-1 rounded-lg border border-neutral-700 bg-neutral-900 p-1 shadow-xl">
-                <button
-                  title="Event rankings"
-                  onClick={() => setStatsOpen((value) => !value)}
-                  className={`icon-button ${statsOpen ? "active" : ""}`}
-                >
-                  <ChartBarIcon />
-                </button>
+            <button
+              title="Track teams"
+              onClick={() =>
+                setTeamModalOpen(true)
+              }
+              className={`icon-button ${
+                teamMode ? "active" : ""
+              }`}
+            >
+              <UserGroupIcon />
+            </button>
 
-                <button
-                  title="Track teams"
-                  onClick={() => setTeamModalOpen(true)}
-                  className={`icon-button ${teamMode ? "active" : ""}`}
-                >
-                  <UserGroupIcon />
-                </button>
+            <button
+              title="Choose webcast"
+              onClick={() =>
+                setStreamModalOpen(true)
+              }
+              className="icon-button"
+            >
+              <VideoCameraIcon />
+            </button>
 
-                <button
-                  title="Choose webcast"
-                  onClick={() => setStreamModalOpen(true)}
-                  className="icon-button"
-                >
-                  <VideoCameraIcon />
-                </button>
+            <button
+              title="Open chat"
+              onClick={() =>
+                setChatOpen(
+                  (value) => !value
+                )
+              }
+              className={`icon-button ${
+                chatOpen ? "active" : ""
+              }`}
+            >
+              <ChatBubbleLeftRightIcon />
+            </button>
 
-                <button
-                  title="Open chat"
-                  onClick={() => setChatOpen((value) => !value)}
-                  className={`icon-button ${chatOpen ? "active" : ""}`}
-                >
-                  <ChatBubbleLeftRightIcon />
-                </button>
-
-                <button
-                  title="Refresh event data"
-                  onClick={reloadDataSources}
-                  className="icon-button"
-                >
-                  <ArrowPathIcon />
-                </button>
-              </div>
-            )}
-          </div>
-
-        {/* Event-local clock */}
-        { !isDivisional ? (
-            <div className="hidden rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-neutral-500 sm:block">
-              <EventLocalTime
-                timezone={eventData.timezone}
-              />
-            </div>
-          ) : ( <div> </div> )
-        }
-
-        {/* Next match indicator */}
-        {nexusData ? (
-          <div className="hidden items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 sm:flex">
-            <div className="text-[9px] uppercase tracking-widest text-neutral-500">
-              Nexus
-            </div>
-
-            <div className="text-xs font-semibold">
-              Now queuing: {nexusData.nowQueuing}
-            </div>
-          </div>
-        ) : (
-          <div className="hidden rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-neutral-500 sm:block">
-            No Nexus Data
+            <button
+              title="Refresh event data"
+              onClick={reloadDataSources}
+              className="icon-button"
+            >
+              <ArrowPathIcon />
+            </button>
           </div>
         )}
-      </header>
+      </div>
 
-      {/* STREAM */}
+      {/* Stream */}
       <div className="relative min-h-0 flex-1">
-        <StreamView stream={activeStream} />
+        <StreamView
+          stream={activeStream}
+        />
 
         {!activeStream && (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -325,51 +529,55 @@ export default function GamedayWidget({
               </div>
 
               <div className="mt-1 text-xs text-neutral-500">
-                This event has not published a supported live stream.
+                This event has not published a supported
+                live stream.
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* BOTTOM BAR */}
-      <footer className="z-20 shrink-0 border-t border-white/10 bg-neutral-950">
-        <div className="flex min-h-[68px] items-center gap-2 px-2 py-1.5">
-
-          {/* Match strip */}
-          <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
-            <MatchStrip
-              matches={displayMatches}
-              team={trackedTeams}
-              nextMatch={nextMatch}
-              lastMatch={lastMatch}
-              eventTimezone={eventData.timezone}
-              playoffAlliances={playoffAlliances}
-              playoffType={eventData.playoff_type}
-            />
-          </div>
-        </div>
+      {/* Event tab + compact match ticker */}
+      <footer className="relative z-20 shrink-0">
+        <MatchStrip
+          matches={displayMatches}
+          team={trackedTeams}
+          nextMatch={nextMatch}
+          lastMatch={lastMatch}
+          eventTimezone={eventData.timezone}
+          playoffAlliances={playoffAlliances}
+          playoffType={eventData.playoff_type}
+          eventName={
+            eventData.short_name ||
+            eventData.name
+          }
+          
+        />
       </footer>
 
-      {/* STATS */}
+      {/* Stats */}
       {statsOpen && (
-        <div className="absolute inset-y-12 right-0 z-30 w-[min(360px,92vw)] border-l border-white/10 bg-neutral-950 shadow-2xl">
+        <div className="absolute inset-y-0 right-0 z-30 w-[min(360px,92vw)] border-l border-white/10 bg-neutral-950 shadow-2xl">
           <EventStatsSideBar
             teamStatuses={teamsStatuses}
-            playoffAlliances={playoffAlliances}
+            playoffAlliances={
+              playoffAlliances
+            }
           />
         </div>
       )}
 
-      {/* CHAT */}
+      {/* Chat */}
       {chatOpen && (
-        <div className="absolute inset-y-12 right-0 z-30 w-[min(420px,92vw)] border-l border-white/10 bg-black shadow-2xl">
+        <div className="absolute inset-y-0 right-0 z-30 w-[min(420px,92vw)] border-l border-white/10 bg-black shadow-2xl">
           <div className="flex h-full flex-col">
             <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 text-xs font-semibold">
               <span>Live chat</span>
 
               <button
-                onClick={() => setChatOpen(false)}
+                onClick={() =>
+                  setChatOpen(false)
+                }
                 className="text-neutral-500 hover:text-white"
               >
                 Close
@@ -377,13 +585,14 @@ export default function GamedayWidget({
             </div>
 
             <div className="min-h-0 flex-1">
-              <ChatView stream={activeStream} />
+              <ChatView
+                stream={activeStream}
+              />
             </div>
           </div>
         </div>
       )}
 
-      {/* MODALS */}
       <StreamModal
         open={streamModalOpen}
         setOpen={setStreamModalOpen}
@@ -399,7 +608,9 @@ export default function GamedayWidget({
         teamsStatuses={teamsStatuses}
         activeTeam={trackedTeams}
         addTrackedTeam={addTrackedTeam}
-        removeTrackedTeam={removeTrackedTeam}
+        removeTrackedTeam={
+          removeTrackedTeam
+        }
       />
     </section>
   );

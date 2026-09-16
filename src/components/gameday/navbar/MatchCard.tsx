@@ -136,7 +136,7 @@ export default function MatchCard({
             : "border-zinc-800 bg-zinc-950",
       ].join(" ")}
     >
-      <div className="grid grid-cols-[60px_minmax(0,1fr)_24px] items-center gap-x-2 leading-none">
+      <div className="grid grid-cols-[65px_minmax(0,1fr)_24px] items-center gap-x-2 leading-none">
         {/* Match name */}
         <div className="row-span-2 flex h-full flex-col justify-center">
           <span
