@@ -230,22 +230,46 @@ function TeamTracker({
 
   if (position === "bottom") {
     return (
-      <div className="pointer-events-none absolute bottom-2 left-1/2 z-40 flex max-w-[calc(100%-1rem)] -translate-x-1/2 flex-wrap justify-center gap-1">
-        {teams.map((team) => (
-          <TeamPill
-            key={team}
-            team={team}
-            status={teamsStatuses?.[team]}
-            teamCount={teamCount}
-            nextMatch={
-              nextMatches[team]
-            }
-          />
-        ))}
+      <div className="pointer-events-none absolute bottom-2 left-0 right-0 z-40 flex justify-center">
+        <div className="pointer-events-auto flex max-w-[calc(100%-1rem)] min-w-0 gap-1 overflow-x-auto overflow-y-hidden px-1 no-scrollbar">
+          {teams.map((team) => (
+            <TeamPill
+              key={team}
+              team={team}
+              status={
+                teamsStatuses?.[team]
+              }
+              teamCount={teamCount}
+              nextMatch={
+                nextMatches[team]
+              }
+            />
+          ))}
+        </div>
       </div>
     );
   }
-
+  if (position === "top") {
+    return (
+      <div className="pointer-events-none absolute top-2 left-0 right-0 z-40 flex justify-center">
+        <div className="pointer-events-auto flex max-w-[calc(100%-1rem)] min-w-0 gap-1 overflow-x-auto overflow-y-hidden px-1 no-scrollbar">
+          {teams.map((team) => (
+            <TeamPill
+              key={team}
+              team={team}
+              status={
+                teamsStatuses?.[team]
+              }
+              teamCount={teamCount}
+              nextMatch={
+                nextMatches[team]
+              }
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-40">
       <div className="absolute left-2 top-1/2 flex max-w-[calc(50%-1rem)] -translate-y-1/2 flex-col gap-1">
@@ -261,9 +285,7 @@ function TeamTracker({
               status={
                 teamsStatuses?.[team]
               }
-              teamCount={
-                teamCount
-              }
+              teamCount={teamCount}
               nextMatch={
                 nextMatches[team]
               }
@@ -284,9 +306,7 @@ function TeamTracker({
               status={
                 teamsStatuses?.[team]
               }
-              teamCount={
-                teamCount
-              }
+              teamCount={teamCount}
               nextMatch={
                 nextMatches[team]
               }

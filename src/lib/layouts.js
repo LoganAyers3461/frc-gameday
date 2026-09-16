@@ -1,19 +1,18 @@
 // src/lib/layouts.js
 
+const VISIBLE = "visible";
+const HIDDEN = "hidden";
+
 const SIDES = "sides";
 const BOTTOM = "bottom";
-
-const FULL = "full";
-const COMPACT = "compact";
-const MINIMAL = "minimal";
-const HIDDEN = "hidden";
+const TOP = "top";
 
 export const LAYOUTS = {
   single: {
     name: "Single",
 
     presentation: {
-      matchInfo: FULL,
+      matchInfo: VISIBLE,
       teamTracker: SIDES,
     },
 
@@ -26,8 +25,8 @@ export const LAYOUTS = {
     name: "Vertical Split",
 
     presentation: {
-      matchInfo: COMPACT,
-      teamTracker: SIDES,
+      matchInfo: VISIBLE,
+      teamTracker: TOP,
     },
 
     slots: [
@@ -40,7 +39,7 @@ export const LAYOUTS = {
     name: "Horizontal Split",
 
     presentation: {
-      matchInfo: COMPACT,
+      matchInfo: VISIBLE,
       teamTracker: SIDES,
     },
 
@@ -54,7 +53,7 @@ export const LAYOUTS = {
     name: "1 + 2",
 
     presentation: {
-      matchInfo: COMPACT,
+      matchInfo: VISIBLE,
       teamTracker: SIDES,
     },
 
@@ -69,7 +68,7 @@ export const LAYOUTS = {
     name: "Quad",
 
     presentation: {
-      matchInfo: MINIMAL,
+      matchInfo: VISIBLE,
       teamTracker: SIDES,
     },
 
@@ -85,7 +84,7 @@ export const LAYOUTS = {
     name: "1 + 3",
 
     presentation: {
-      matchInfo: MINIMAL,
+      matchInfo: VISIBLE,
       teamTracker: SIDES,
     },
 
@@ -97,11 +96,29 @@ export const LAYOUTS = {
     ],
   },
 
+  twoPlusThree: {
+    name: "2 + 3",
+
+    presentation: {
+      matchInfo: HIDDEN,
+      teamTracker: BOTTOM,
+    },
+
+    slots: [
+      { x: 0, y: 0, w: 50, h: 60 },
+      { x: 50, y: 0, w: 50, h: 60 },
+
+      { x: 0, y: 60, w: 33.33, h: 40 },
+      { x: 33.33, y: 60, w: 33.33, h: 40 },
+      { x: 66.66, y: 60, w: 33.33, h: 40 },
+    ],
+  },
+
   onePlusSix: {
     name: "1 + 6",
 
     presentation: {
-      matchInfo: MINIMAL,
+      matchInfo: HIDDEN,
       teamTracker: BOTTOM,
     },
 
@@ -119,52 +136,12 @@ export const LAYOUTS = {
     ],
   },
 
-  twoPlusThree: {
-    name: "2 + 3",
-
-    presentation: {
-      matchInfo: MINIMAL,
-      teamTracker: BOTTOM,
-    },
-
-    slots: [
-      { x: 0, y: 0, w: 50, h: 60 },
-      { x: 50, y: 0, w: 50, h: 60 },
-
-      { x: 0, y: 60, w: 33.33, h: 40 },
-      { x: 33.33, y: 60, w: 33.33, h: 40 },
-      { x: 66.66, y: 60, w: 33.33, h: 40 },
-    ],
-  },
-
-  twoPlusSix: {
-    name: "2 + 6",
-
-    presentation: {
-      matchInfo: MINIMAL,
-      teamTracker: BOTTOM,
-    },
-
-    slots: [
-      { x: 25, y: 0, w: 50, h: 50 },
-      { x: 25, y: 50, w: 50, h: 50 },
-
-      { x: 0, y: 0, w: 25, h: 33.33 },
-      { x: 0, y: 33.33, w: 25, h: 33.33 },
-      { x: 0, y: 66.66, w: 25, h: 33.33 },
-
-      { x: 75, y: 0, w: 25, h: 33.33 },
-      { x: 75, y: 33.33, w: 25, h: 33.33 },
-      { x: 75, y: 66.66, w: 25, h: 33.33 },
-    ],
-  },
-
   hex: {
     name: "Hex-view",
 
     presentation: {
-      matchInfo: MINIMAL,
-      teamTracker: SIDES,
+      matchInfo: HIDDEN,
+      teamTracker: BOTTOM,
     },
 
     slots: [
@@ -182,7 +159,7 @@ export const LAYOUTS = {
     name: "Octo-view",
 
     presentation: {
-      matchInfo: MINIMAL,
+      matchInfo: HIDDEN,
       teamTracker: BOTTOM,
     },
 
@@ -203,7 +180,7 @@ export const LAYOUTS = {
     name: "1 + 8",
 
     presentation: {
-      matchInfo: MINIMAL,
+      matchInfo: HIDDEN,
       teamTracker: BOTTOM,
     },
 
@@ -224,12 +201,34 @@ export const LAYOUTS = {
     ],
   },
 
+  twoPlusSix: {
+    name: "2 + 6",
+
+    presentation: {
+      matchInfo: HIDDEN,
+      teamTracker: BOTTOM,
+    },
+
+    slots: [
+      { x: 25, y: 0, w: 50, h: 50 },
+      { x: 25, y: 50, w: 50, h: 50 },
+
+      { x: 0, y: 0, w: 25, h: 33.33 },
+      { x: 0, y: 33.33, w: 25, h: 33.33 },
+      { x: 0, y: 66.66, w: 25, h: 33.33 },
+
+      { x: 75, y: 0, w: 25, h: 33.33 },
+      { x: 75, y: 33.33, w: 25, h: 33.33 },
+      { x: 75, y: 66.66, w: 25, h: 33.33 },
+    ],
+  },
+
   nineGrid: {
     name: "Nono-view",
 
     presentation: {
-      matchInfo: MINIMAL,
-      teamTracker: BOTTOM,
+      matchInfo: HIDDEN,
+      teamTracker: SIDES,
     },
 
     slots: [
@@ -253,19 +252,9 @@ export function pickLayout(count) {
   if (count === 2) return "verticalSplit";
   if (count === 3) return "onePlusTwo";
   if (count === 4) return "quad";
-  if (count <= 6) return "hex";
-  if (count <= 7) return "onePlusSix";
-  if (count <= 8) return "octo";
-  return "nineGrid";
-}
-
-export function pickHighlightLayout(count) {
-  if (count <= 1) return "single";
-  if (count === 2) return "verticalSplit";
-  if (count === 3) return "onePlusTwo";
-  if (count === 4) return "onePlusThree";
   if (count === 5) return "twoPlusThree";
-  if (count === 8) return "onePlusEight";
-  if (count === 9) return "onePlusEight";
-  return "onePlusSix";
+  if (count === 6) return "hex";
+  if (count === 7) return "onePlusSix";
+  if (count === 8) return "octo";
+  return "nineGrid";
 }
