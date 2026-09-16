@@ -2,88 +2,21 @@
 
 import { useEffect } from "react";
 
-export default function StreamModal({
-  open,
-  setOpen,
-  streams,
-  activeKey,
-  setActiveKey,
-}) {
-  // ESC to close
+export default function StreamModal({ open, setOpen, streams = [], activeKey, setActiveKey }) {
   useEffect(() => {
     if (!open) return;
-
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    const close = (e) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
   }, [open, setOpen]);
 
   if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-      {/* modal container */}
-      <div className="w-[420px] max-w-[90vw] bg-neutral-900 rounded-lg shadow-xl">
-        
-        {/* header */}
-        <div className="flex justify-between items-center px-4 py-3 border-b border-neutral-700">
-          <h2 className="text-white font-medium">Select Stream</h2>
-
-          <button
-            onClick={() => setOpen(false)}
-            className="text-gray-400 hover:text-white"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* list */}
-        <div className="max-h-[60vh] overflow-y-auto">
-          {streams.map((s) => {
-            const isActive = s.key === activeKey;
-
-            return (
-              <button
-                key={s.key}
-                onClick={() => {
-                  setActiveKey(s.key);
-                  setOpen(false);
-                }}
-                className={`w-full text-left px-4 py-3 flex justify-between items-center hover:bg-neutral-800 ${
-                  isActive ? "bg-neutral-800" : ""
-                }`}
-              >
-                <div>
-                  <div className="text-white text-xs">
-                    {s.date}
-                  </div>
-                  <div className="text-white text-sm">
-                    {s.type === "youtube" ? s.meta?.title || "YouTube Stream" : "Twitch Stream"}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {s.type.charAt(0).toUpperCase() + s.type.slice(1)} - {s.channel} 
-                  </div>
-                </div>
-
-                {/* active indicator */}
-                {isActive && (
-                  <div className="text-xs text-green-400 text-nowrap">
-                    SELECTED
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* footer */}
-        <div className="px-4 py-2 border-t border-neutral-700 text-xs text-gray-500">
-          {streams.length} stream{streams.length !== 1 ? "s" : ""} available
-        </div>
+  return <div className="modal-backdrop" onMouseDown={() => setOpen(false)}>
+    <div className="modal-panel" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3"><div><div className="font-semibold">Webcasts</div><div className="text-xs text-neutral-500">{streams.length} available</div></div><button onClick={() => setOpen(false)} className="text-neutral-500 hover:text-white">Close</button></div>
+      <div className="max-h-[65vh] overflow-y-auto p-2">
+        {streams.length ? streams.map((stream) => <button key={stream.key} onClick={() => { setActiveKey(stream.key); setOpen(false); }} className={`w-full rounded-lg p-3 text-left ${stream.key === activeKey ? "bg-white text-black" : "hover:bg-white/5"}`}><div className="text-sm font-medium">{stream.meta?.title || `${stream.type === "youtube" ? "YouTube" : "Twitch"} webcast`}</div><div className="mt-1 text-xs opacity-60">{stream.date || "Date not specified"}</div></button>) : <div className="p-6 text-center text-sm text-neutral-500">No supported webcasts have been published.</div>}
       </div>
     </div>
-  );
+  </div>;
 }

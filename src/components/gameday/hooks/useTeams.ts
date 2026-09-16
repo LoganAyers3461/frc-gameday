@@ -7,35 +7,34 @@ export function useTeams(eventKey: string) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!eventKey) return;
-
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch(`/api/event/${eventKey}/teams`);
-        const json = await res.json();
-        //console.log(json);
-        await Promise.all(json.map(async (t: any) => {
-          const district = await fetch(`/api/team/${t.key}/district`).then(res => res.json());
-          t.district = district || null;
-        }));
-
-
-        if (!cancelled) {
-          setTeams(json);
-          setLoading(false);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    if (!eventKey) {
+      setTeams([]);
+      setLoading(false);
+      return;
     }
 
-    load();
+    let cancelled = false;
+    setLoading(true);
 
-    return () => {
-      cancelled = true;
-    };
+    fetch(`/api/event/${eventKey}/teams`, { cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Teams request failed: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) setTeams(Array.isArray(data) ? data : []);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error("useTeams error:", error);
+          setTeams([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
   }, [eventKey]);
 
   return { teams, loading };

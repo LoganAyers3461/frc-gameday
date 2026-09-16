@@ -1,12 +1,5 @@
 "use client";
-
 export default function ChatView({ stream }) {
-  if (!stream) return null;
-
-  return (
-    <iframe
-      className="w-full h-full bg-black"
-      src={stream.chat}
-    />
-  );
+  if (!stream?.chat) return <div className="flex h-full items-center justify-center text-xs text-neutral-500">No chat available</div>;
+  return <iframe className="h-full w-full bg-black" src={stream.chat} title="Live chat" />;
 }

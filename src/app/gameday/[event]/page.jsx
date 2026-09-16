@@ -1,19 +1,11 @@
+"use client";
+
+import { useParams, useSearchParams } from "next/navigation";
 import GamedayWidget from "@/components/gameday/GamedayWidget";
 
-export default async function GamedayPage({ params, searchParams }) {
-  const { event } = await params; 
-  const sp = await searchParams; 
-
-  const team = sp?.team || [];
-
-  console.log("EVENT:", event);
-  console.log("TEAM:", team);
-
-
-  return (
-    console.log("Rendering GamedayPage with:", { event, team }) || 
-    <div className="w-full h-screen flex flex-col bg-black text-white overflow-hidden">
-      <GamedayWidget event={event} initialTeams={team} isMultiview={false} />
-    </div>
-  );
+export default function GamedayPage() {
+  const { event } = useParams();
+  const searchParams = useSearchParams();
+  const teams = searchParams.getAll("team");
+  return <div className="h-screen bg-black"><GamedayWidget event={event} initialTeams={teams} isDivisional={false} /></div>;
 }

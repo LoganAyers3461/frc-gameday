@@ -1,38 +1,37 @@
 export function formatEventTime(timestampSeconds, eventTimeZone) {
+  if (!timestampSeconds) return "Time TBD";
+
+  const timeZone = eventTimeZone || "UTC";
   const date = new Date(timestampSeconds * 1000);
+  const now = new Date();
 
-  const eventDate = new Date(
-    date.toLocaleString("en-US", { timeZone: eventTimeZone })
-  );
-
-  const now = new Date(
-    new Date().toLocaleString("en-US", { timeZone: eventTimeZone })
-  );
-
-  const isDifferentDay =
-    eventDate.toDateString() !== now.toDateString();
-
-  const time = eventDate.toLocaleTimeString("en-US", {
-    timeZone: eventTimeZone,
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    timeZoneName: "short"
+    hour12: true,
   });
 
-  const cleanedTime = time//.replace(/\s?(AM|PM)/i, (_, p1) =>
-    //p1[0].toLowerCase()
-  //);
+  const parts = Object.fromEntries(
+    formatter.formatToParts(date).map(({ type, value }) => [type, value])
+  );
 
-  if (!isDifferentDay) {
-    return cleanedTime;
-  }
+  const nowParts = Object.fromEntries(
+    formatter.formatToParts(now).map(({ type, value }) => [type, value])
+  );
 
-  const day = eventDate.toLocaleDateString("en-US", {
-    timeZone: eventTimeZone,
-    weekday: "short",
-  });
+  const sameDay =
+    parts.year === nowParts.year &&
+    parts.month === nowParts.month &&
+    parts.day === nowParts.day;
 
-  return `${day} ${cleanedTime}`;
+  const time = `${parts.hour}:${parts.minute}`;
+
+  return sameDay ? time : `${parts.weekday} ${time}`;
 }
 
 export function formatEventDate(timestampSeconds, timeZone) {
@@ -52,7 +51,6 @@ export function getEventNow(timeZone) {
   );
 }
 
-
 export function parseLocalDate(dateStr) {
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
@@ -62,8 +60,18 @@ export function dumbDateString(dateStr) {
   const [year, month, day] = dateStr.split("-").map(Number);
 
   const months = [
-    "Jan","Feb","Mar","Apr","May","Jun",
-    "Jul","Aug","Sep","Oct","Nov","Dec"
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
 
   return `${months[month - 1]} ${day}, ${year}`;

@@ -1,63 +1,45 @@
+"use client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
-import { NexusData, NexusMatch } from "@/lib/nexus/types";
+import { NexusData } from "@/lib/nexus/types";
 
 export function useNexus(eventKey: string | null, interval = 2000) {
-    const [data, setData] = useState<NexusData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
+  const [data, setData] = useState<NexusData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const etag = useRef<string | null>(null);
 
-    const etag = useRef<string | null>(null);
+  const fetchNexus = useCallback(async () => {
+    if (!eventKey) return;
+    try {
+      const response = await fetch(`/api/event/${eventKey}/nexus`, {
+        headers: etag.current ? { "If-None-Match": etag.current } : {},
+        cache: "no-store",
+      });
 
-    const fetchNexus = useCallback(async () => {
-        if (!eventKey) return;
+      if (response.status === 204 || response.status === 304) return;
+      if (!response.ok) throw new Error(`Nexus request failed: ${response.status}`);
 
-        try {
-            const response = await fetch(`/api/event/${eventKey}/nexus`, {
-                headers: etag.current
-                    ? { "If-None-Match": etag.current }
-                    : {},
-                cache: "no-store",
-            });
+      const next: NexusData = await response.json();
+      etag.current = response.headers.get("etag");
+      setData(next);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Unknown Nexus error"));
+    } finally {
+      setLoading(false);
+    }
+  }, [eventKey]);
 
-            if (response.status === 304) {
-                return;
-            }
+  useEffect(() => {
+    if (!eventKey) return;
+    etag.current = null;
+    setData(null);
+    setLoading(true);
+    void fetchNexus();
+    const timer = setInterval(fetchNexus, interval);
+    return () => clearInterval(timer);
+  }, [eventKey, interval, fetchNexus]);
 
-            if (!response.ok) {
-                throw new Error(`Nexus request failed: ${response.status}`);
-            }
-
-            const next: NexusData = await response.json();
-
-            etag.current = response.headers.get("etag");
-
-            setData(next);
-            setError(null);
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err
-                    : new Error("Unknown Nexus error")
-            );
-        } finally {
-            setLoading(false);
-        }
-    }, [eventKey]);
-
-    useEffect(() => {
-        if (!eventKey) return;
-
-        fetchNexus();
-
-        const timer = setInterval(fetchNexus, interval);
-
-        return () => clearInterval(timer);
-    }, [eventKey, interval, fetchNexus]);
-
-    return {
-        data,
-        loading,
-        error,
-        refresh: fetchNexus,
-    };
+  return { data, loading, error, refresh: fetchNexus };
 }

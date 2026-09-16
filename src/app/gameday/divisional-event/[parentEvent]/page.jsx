@@ -4,97 +4,27 @@ import { useEffect, useState } from "react";
 import MultiviewClient from "@/components/multiview/MultiviewClient";
 import GamedayWidget from "@/components/gameday/GamedayWidget";
 
-// ==============================
-// HELPERS
-// ==============================
-function normalizeTeams(param) {
-  if (!param) return [];
-  return Array.isArray(param) ? param : [param];
-}
-
-// ==============================
-// COMPONENT
-// ==============================
 export default function DivisionalEvent({ params, searchParams }) {
-  const [parent, setParent] = useState(null);
-  const [divisionKeys, setDivisionKeys] = useState([]);
-  const [teams, setTeams] = useState([]);
-  const [parentEvent, setParentEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(false);
 
-  // ==============================
-  // UNWRAP PARAMS + LOAD DATA
-  // ==============================
   useEffect(() => {
     let cancelled = false;
-
-    async function init() {
-      try {
-        setLoading(true);
-
-        // ✅ unwrap both promises
-        const resolvedParams = await params;
-        const resolvedSearchParams = await searchParams;
-
-        const parentKey = resolvedParams?.parentEvent;
-        const parsedTeams = normalizeTeams(resolvedSearchParams?.team);
-
-        if (cancelled) return;
-
-        setTeams(parsedTeams);
-        setParentEvent(parentKey);
-
-        // fetch parent event
-        const res = await fetch(`/api/event/${parentKey}`);
-        const parentData = await res.json();
-
-        if (cancelled) return;
-
-        setParent(parentData);
-        setDivisionKeys(parentData?.division_keys || []);
-      } catch (err) {
-        console.error("Failed to load divisional event:", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    init();
-
-    return () => {
-      cancelled = true;
-    };
+    Promise.all([params, searchParams]).then(async ([p, sp]) => {
+      const key = p.parentEvent;
+      const res = await fetch(`/api/event/${key}`, { cache: "no-store" });
+      if (!res.ok) throw new Error();
+      const parent = await res.json();
+      const teams = Array.isArray(sp?.team) ? sp.team : sp?.team ? [sp.team] : [];
+      if (!cancelled) setData({ parent, teams });
+    }).catch(() => !cancelled && setError(true));
+    return () => { cancelled = true; };
   }, [params, searchParams]);
 
-  // ==============================
-  // LOADING
-  // ==============================
-  if (loading || !parentEvent) {
-    return <div className="p-4 text-white">Loading events...</div>;
-  }
+  if (error) return <div className="flex h-screen items-center justify-center bg-black text-sm text-neutral-500">Championship event not found.</div>;
+  if (!data) return <div className="flex h-screen items-center justify-center bg-black text-sm text-neutral-500">Loading championship…</div>;
 
-  // ==============================
-  // RENDER
-  // ==============================
-  return (
-    <MultiviewClient isDivisional={true} parentEvent={parent}>
-      {/* Divisions */}
-      {divisionKeys.map((key) => (
-        <GamedayWidget
-          key={key}
-          event={key}
-          initialTeams={teams}
-          isDivisional={true}
-        />
-      ))}
-
-      {/* Parent */}
-      <GamedayWidget
-        key={parentEvent}
-        event={parentEvent}
-        initialTeams={teams}
-        isDivisional={true}
-      />
-    </MultiviewClient>
-  );
+  const divisions = data.parent?.division_keys || [];
+  const events = [...divisions, data.parent.key];
+  return <MultiviewClient isDivisional parentEvent={data.parent}>{events.map((key) => <GamedayWidget key={key} event={key} initialTeams={data.teams} isDivisional />)}</MultiviewClient>;
 }

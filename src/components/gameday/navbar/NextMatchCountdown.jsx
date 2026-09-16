@@ -2,31 +2,15 @@
 
 import { useEffect, useState } from "react";
 
-function getEventNow(timezone) {
-  return new Date(
-    new Date().toLocaleString("en-US", { timeZone: timezone })
-  );
-}
-
-function formatTimeRemaining(seconds) {
-  if (seconds <= 0) return "Now";
-
+function format(seconds) {
+  if (seconds <= 0) return "NOW";
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-
-  if (mins > 60) {
-    const hrs = Math.floor(mins / 60);
-    const remMins = mins % 60;
-    return `${hrs.toString().padStart(2, '0')}h ${remMins.toString().padStart(2, '0')}m`;
-  }
-
-  return `${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
+  if (mins >= 60) return `${String(Math.floor(mins / 60)).padStart(2, "0")}h ${String(mins % 60).padStart(2, "0")}m`;
+  return `${String(mins).padStart(2, "0")}m ${String(secs).padStart(2, "0")}s`;
 }
 
-export default function NextMatchCountdown({
-  nextMatch,
-  timezone,
-}) {
+export default function NextMatchCountdown({ nextMatch }) {
   const [remaining, setRemaining] = useState(null);
 
   useEffect(() => {
@@ -34,36 +18,13 @@ export default function NextMatchCountdown({
       setRemaining(null);
       return;
     }
-
-    const update = () => {
-      const now = getEventNow(timezone);
-      const target = new Date(nextMatch.predicted_time * 1000);
-
-      const diff = Math.floor((target - now) / 1000);
-      setRemaining(diff);
-    };
-
+    const update = () => setRemaining(Math.floor(nextMatch.predicted_time - Date.now() / 1000));
     update();
     const id = setInterval(update, 1000);
-
     return () => clearInterval(id);
-  }, [nextMatch, timezone]);
+  }, [nextMatch?.predicted_time]);
 
-  if (!nextMatch) {
-    return (
-      <div className="text-sm text-gray-400">
-        No upcoming match
-      </div>
-    );
-  }
-
-  const formatted = formatTimeRemaining(remaining);
-
-  return (
-    <div className="text-sm">
-      <span className="font-mono font-semibold text-white">
-        {formatted}
-      </span>
-    </div>
-  );
+  if (!nextMatch) return "No upcoming match";
+  if (remaining == null) return "Time TBD";
+  return format(remaining);
 }

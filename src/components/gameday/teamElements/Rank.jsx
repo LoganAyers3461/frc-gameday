@@ -1,73 +1,7 @@
 "use client";
-
-export default function TeamRank({ status }) {
-  if (!status) {
-    return (
-      <div className="text-gray-400">
-        No Rank
-      </div>
-    );
-  }
-  
-  const isPlayoffs = !!status?.playoff;
-  const isQuals = !!status?.qual?.ranking;
-  //console.log("TeamRank render with status", status, isPlayoffs, isQuals);
-
-
-  // ------------------------
-  // PLAYOFFS
-  // ------------------------
-  if (isPlayoffs) {
-    const allianceName = status?.alliance?.name
-      ? status.alliance.name
-      : "";
-
-    const round = status?.playoff?.double_elim_round
-      ? status.playoff.double_elim_round
-      : status?.playoff?.level
-      ? status.playoff.level.toUpperCase()
-      : "PLAYOFFS";
-
-    const isEliminated = status?.playoff?.status === "eliminated";
-
-    return (
-      <div className="flex items-center gap-2">
-        <span className="font-semibold">
-          {allianceName || "?"}
-        </span>
-
-        <span className="text-gray-500">|</span>
-
-        {isEliminated ? (
-          <span className="text-red-400 font-semibold">
-            {round}
-          </span>
-        ) : (
-          <span className="text-white-300 font-semibold">
-            {round}
-          </span>
-        )}
-      </div>
-    );
-  } else if (isQuals) {
-  // ------------------------
-  // QUALIFICATIONS
-  // ------------------------
-    const rank = status.qual?.ranking?.rank;
-    const total = status.qual?.num_teams;
-
-    return (
-        <div className="font-semibold">
-          <span className="text-white-300">Rank:</span> {rank ?? "?"} / {total ?? "?"}
-        </div>
-    );
-  }
-  // ------------------------
-  // FALLBACK
-  // ------------------------
-  return (
-    <div className="text-gray-400">
-      No Rank
-    </div>
-  );
+export default function Rank({ status }) {
+  if (!status) return null;
+  if (status.qual?.ranking?.rank != null) return <span>Rank {status.qual.ranking.rank}/{status.qual.num_teams ?? "?"}</span>;
+  if (status.alliance?.name) return <span>{status.alliance.name}</span>;
+  return null;
 }
