@@ -4,37 +4,18 @@ import { useEffect, useState } from "react";
 
 export function useTeams(eventKey: string) {
   const [teams, setTeams] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(eventKey));
 
   useEffect(() => {
-    if (!eventKey) {
-      setTeams([]);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
+    if (!eventKey) { setTeams([]); setLoading(false); return; }
+    const controller = new AbortController();
     setLoading(true);
-
-    fetch(`/api/event/${eventKey}/teams`, { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Teams request failed: ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) setTeams(Array.isArray(data) ? data : []);
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          console.error("useTeams error:", error);
-          setTeams([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => { cancelled = true; };
+    fetch(`/api/event/${eventKey}/teams`, { cache: "no-store", signal: controller.signal })
+      .then((res) => { if (!res.ok) throw new Error(`Teams request failed: ${res.status}`); return res.json(); })
+      .then((data) => setTeams(Array.isArray(data) ? data : []))
+      .catch((err) => { if (err.name !== "AbortError") { console.error("useTeams:", err); setTeams([]); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [eventKey]);
 
   return { teams, loading };

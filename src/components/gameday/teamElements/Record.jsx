@@ -1,6 +1,1 @@
-"use client";
-export default function Record({ status }) {
-  const record = status?.playoff?.record || status?.playoff?.current_level_record || status?.qual?.ranking?.record;
-  if (!record) return null;
-  return <span>{record.wins ?? 0}W-{record.losses ?? 0}L{record.ties ? `-${record.ties}T` : ""}</span>;
-}
+export default function Record({status}){const r=status?.qual?.ranking?.record; return <span>{r?`${r.wins??0}-${r.losses??0}-${r.ties??0}`:"—"}</span>}

@@ -11,62 +11,32 @@ export const POLLING_INTERVALS = {
 
 export type PollingTier = keyof typeof POLLING_INTERVALS;
 
-export interface UsePollingOptions {
-  enabled?: boolean;
-  resetKey?: string | null;
-}
-
-/**
- * Run a callback on one of the application's standard polling cadences.
- *
- * The callback runs immediately, then on the selected interval.
- *
- * Scheduling is intentionally kept separate from the callback itself:
- * usePolling knows nothing about what is being fetched or how the result
- * is stored.
- */
 export function usePolling(
   callback: () => void | Promise<void>,
   tier: PollingTier,
-  {
-    enabled = true,
-    resetKey = null,
-  }: UsePollingOptions = {}
+  options: { enabled?: boolean; resetKey?: string | null } = {},
 ) {
+  const { enabled = true, resetKey = null } = options;
   const callbackRef = useRef(callback);
-  const inFlightRef = useRef(false);
-
+  const runningRef = useRef(false);
   callbackRef.current = callback;
 
   const poll = useCallback(async () => {
-    if (inFlightRef.current) return;
-
-    inFlightRef.current = true;
-
+    if (runningRef.current) return;
+    runningRef.current = true;
     try {
       await callbackRef.current();
     } finally {
-      inFlightRef.current = false;
+      runningRef.current = false;
     }
   }, []);
 
   useEffect(() => {
     if (!enabled) return;
-
-    const interval = POLLING_INTERVALS[tier];
-
     void poll();
+    const id = window.setInterval(() => void poll(), POLLING_INTERVALS[tier]);
+    return () => window.clearInterval(id);
+  }, [enabled, poll, resetKey, tier]);
 
-    const timer = window.setInterval(() => {
-      void poll();
-    }, interval);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [enabled, tier, resetKey, poll]);
-
-  return {
-    poll,
-  };
+  return poll;
 }
