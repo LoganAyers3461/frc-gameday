@@ -34,7 +34,7 @@ export default function HomePage() {
     upcoming: filtered.filter((e) => e.state === "upcoming"),
   }), [filtered]);
 
-  function toggle(key) {
+  function toggle(key: string) {
     setSelected((current) => current.includes(key) ? current.filter((k) => k !== key) : [...current, key]);
   }
 

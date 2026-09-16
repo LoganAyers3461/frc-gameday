@@ -1,13 +1,35 @@
-// lib/layouts.js
+// src/lib/layouts.js
+
+const SIDES = "sides";
+const BOTTOM = "bottom";
+
+const FULL = "full";
+const COMPACT = "compact";
+const MINIMAL = "minimal";
+const HIDDEN = "hidden";
 
 export const LAYOUTS = {
   single: {
     name: "Single",
-    slots: [{ x: 0, y: 0, w: 100, h: 100 }],
+
+    presentation: {
+      matchInfo: FULL,
+      teamTracker: SIDES,
+    },
+
+    slots: [
+      { x: 0, y: 0, w: 100, h: 100 },
+    ],
   },
 
   verticalSplit: {
     name: "Vertical Split",
+
+    presentation: {
+      matchInfo: COMPACT,
+      teamTracker: SIDES,
+    },
+
     slots: [
       { x: 0, y: 0, w: 50, h: 100 },
       { x: 50, y: 0, w: 50, h: 100 },
@@ -16,6 +38,12 @@ export const LAYOUTS = {
 
   horizontalSplit: {
     name: "Horizontal Split",
+
+    presentation: {
+      matchInfo: COMPACT,
+      teamTracker: SIDES,
+    },
+
     slots: [
       { x: 0, y: 0, w: 100, h: 50 },
       { x: 0, y: 50, w: 100, h: 50 },
@@ -24,8 +52,14 @@ export const LAYOUTS = {
 
   onePlusTwo: {
     name: "1 + 2",
+
+    presentation: {
+      matchInfo: COMPACT,
+      teamTracker: SIDES,
+    },
+
     slots: [
-      { x: 0, y: 0, w: 60, h: 100 }, // primary
+      { x: 0, y: 0, w: 60, h: 100 },
       { x: 60, y: 0, w: 40, h: 50 },
       { x: 60, y: 50, w: 40, h: 50 },
     ],
@@ -33,6 +67,12 @@ export const LAYOUTS = {
 
   quad: {
     name: "Quad",
+
+    presentation: {
+      matchInfo: MINIMAL,
+      teamTracker: SIDES,
+    },
+
     slots: [
       { x: 0, y: 0, w: 50, h: 50 },
       { x: 50, y: 0, w: 50, h: 50 },
@@ -43,6 +83,12 @@ export const LAYOUTS = {
 
   onePlusThree: {
     name: "1 + 3",
+
+    presentation: {
+      matchInfo: MINIMAL,
+      teamTracker: SIDES,
+    },
+
     slots: [
       { x: 0, y: 0, w: 75, h: 100 },
       { x: 75, y: 0, w: 25, h: 33.33 },
@@ -53,11 +99,15 @@ export const LAYOUTS = {
 
   onePlusSix: {
     name: "1 + 6",
+
+    presentation: {
+      matchInfo: MINIMAL,
+      teamTracker: BOTTOM,
+    },
+
     slots: [
-      // primary
       { x: 0, y: 0, w: 70, h: 100 },
 
-      // right 2x3 grid (top → bottom)
       { x: 70, y: 0, w: 15, h: 33.33 },
       { x: 85, y: 0, w: 15, h: 33.33 },
 
@@ -71,6 +121,12 @@ export const LAYOUTS = {
 
   twoPlusThree: {
     name: "2 + 3",
+
+    presentation: {
+      matchInfo: MINIMAL,
+      teamTracker: BOTTOM,
+    },
+
     slots: [
       { x: 0, y: 0, w: 50, h: 60 },
       { x: 50, y: 0, w: 50, h: 60 },
@@ -83,6 +139,12 @@ export const LAYOUTS = {
 
   twoPlusSix: {
     name: "2 + 6",
+
+    presentation: {
+      matchInfo: MINIMAL,
+      teamTracker: BOTTOM,
+    },
+
     slots: [
       { x: 25, y: 0, w: 50, h: 50 },
       { x: 25, y: 50, w: 50, h: 50 },
@@ -99,6 +161,12 @@ export const LAYOUTS = {
 
   hex: {
     name: "Hex-view",
+
+    presentation: {
+      matchInfo: MINIMAL,
+      teamTracker: SIDES,
+    },
+
     slots: [
       { x: 0, y: 0, w: 33.33, h: 50 },
       { x: 33.33, y: 0, w: 33.33, h: 50 },
@@ -112,6 +180,12 @@ export const LAYOUTS = {
 
   octo: {
     name: "Octo-view",
+
+    presentation: {
+      matchInfo: MINIMAL,
+      teamTracker: BOTTOM,
+    },
+
     slots: [
       { x: 0, y: 0, w: 25, h: 50 },
       { x: 25, y: 0, w: 25, h: 50 },
@@ -124,15 +198,20 @@ export const LAYOUTS = {
       { x: 75, y: 50, w: 25, h: 50 },
     ],
   },
+
   onePlusEight: {
     name: "1 + 8",
+
+    presentation: {
+      matchInfo: MINIMAL,
+      teamTracker: BOTTOM,
+    },
+
     slots: [
-      // Primary focus
       { x: 0, y: 0, w: 70, h: 100 },
 
-      // Right side grid (2 columns × 4 rows)
-      { x: 70, y: 0,  w: 15, h: 25 },
-      { x: 85, y: 0,  w: 15, h: 25 },
+      { x: 70, y: 0, w: 15, h: 25 },
+      { x: 85, y: 0, w: 15, h: 25 },
 
       { x: 70, y: 25, w: 15, h: 25 },
       { x: 85, y: 25, w: 15, h: 25 },
@@ -144,8 +223,15 @@ export const LAYOUTS = {
       { x: 85, y: 75, w: 15, h: 25 },
     ],
   },
+
   nineGrid: {
     name: "Nono-view",
+
+    presentation: {
+      matchInfo: MINIMAL,
+      teamTracker: BOTTOM,
+    },
+
     slots: [
       { x: 0, y: 0, w: 33.333, h: 33.333 },
       { x: 33.333, y: 0, w: 33.333, h: 33.333 },
