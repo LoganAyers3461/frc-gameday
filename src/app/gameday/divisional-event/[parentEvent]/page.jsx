@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useEffect, useState } from "react";
 import MultiviewClient from "@/components/multiview/MultiviewClient";
