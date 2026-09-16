@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import MultiviewClient from "@/components/multiview/MultiviewClient";
 import GamedayWidget from "@/components/gameday/GamedayWidget";
 
+export const dynamic = "force-dynamic";
+
 export default function GamedayPage() {
   const params = useSearchParams();
   const eventKeys = params.getAll("event");

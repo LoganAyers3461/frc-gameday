@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import MultiviewClient from "@/components/multiview/MultiviewClient";
 import GamedayWidget from "@/components/gameday/GamedayWidget";
 
+export const dynamic = "force-dynamic";
 export default function DivisionalEvent({ params, searchParams }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
