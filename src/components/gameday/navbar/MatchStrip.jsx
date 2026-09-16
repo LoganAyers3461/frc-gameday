@@ -13,6 +13,7 @@ export default function MatchStrip({
   playoffType = null,
   eventName,
   showEventInfo = true,
+  isDivisional = false,
 }) {
   const seen = new Set();
   const cards = [];
@@ -39,7 +40,7 @@ export default function MatchStrip({
               <span className="truncate text-[11px] font-bold text-white">
                 {eventName || "Event"}
 
-                {eventTimezone && (
+                {(eventTimezone && !isDivisional) && (
                   <span className="ml-1 text-[9px] text-neutral-500">
                     <EventLocalTime
                       timezone={eventTimezone}

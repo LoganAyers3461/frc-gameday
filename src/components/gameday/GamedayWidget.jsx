@@ -184,6 +184,7 @@ export default function GamedayWidget({
   initialTeams = [],
   registerLabel,
   isDivisional = false,
+  multiview = {}
 }) {
   const {
     event: eventData,
@@ -428,6 +429,7 @@ export default function GamedayWidget({
               nextMatch={
                 trackedTeamNextMatches[team]
               }
+              multiview={multiview}
             />
           ))}
         </div>
@@ -551,6 +553,8 @@ export default function GamedayWidget({
             eventData.short_name ||
             eventData.name
           }
+          isDivisional={isDivisional}
+          multiview={multiview}
           
         />
       </footer>

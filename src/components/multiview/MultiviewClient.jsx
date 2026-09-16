@@ -195,7 +195,7 @@ export default function MultiviewClient({
             {isDivisional && parentEvent ? (
               <div className="flex min-w-0 flex-col pl-2">
                 <span className="truncate text-sm font-bold">
-                  
+                  {parentEvent.name}
                 </span>
 
                 <span className="text-xs text-gray-400">
@@ -331,6 +331,12 @@ export default function MultiviewClient({
                 {React.cloneElement(child, {
                   registerLabel: (label) =>
                     registerLabel(childIndex, label),
+
+                  multiview: {
+                    layoutKey,
+                    layout: layout,
+                    matchStrip: layout.matchStrip,
+                  },
                 })}
               </div>
             );
