@@ -9,6 +9,7 @@ export default function MatchStrip({
   lastMatch = null,
   eventTimezone,
   playoffAlliances = [],
+  playoffType = null
 }) {
   const seen = new Set();
   const cards = [];
@@ -32,6 +33,7 @@ export default function MatchStrip({
           isNext={match.key === nextMatch?.key}
           isLast={match.key === lastMatch?.key}
           playoffAlliances={playoffAlliances}
+          playoffType={playoffType}
           eventTimezone={eventTimezone}
         />
       ))}

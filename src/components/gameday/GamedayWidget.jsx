@@ -7,6 +7,7 @@ import {
   ChatBubbleLeftRightIcon,
   UserGroupIcon,
   VideoCameraIcon,
+  Cog6ToothIcon
 } from "@heroicons/react/24/outline";
 
 import GamedayEventTeamInfo from "./GamedayEventTeamInfo";
@@ -65,6 +66,7 @@ export default function GamedayWidget({
   const [trackedTeams, setTrackedTeams] = useState(initialTeams);
   const [rawStreams, setRawStreams] = useState([]);
 
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [streamModalOpen, setStreamModalOpen] = useState(false);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
@@ -208,15 +210,17 @@ export default function GamedayWidget({
             {eventData.short_name || eventData.name}
           </div>
 
-          <div className="truncate text-[11px] text-neutral-500">
-            {[
-              eventData.city,
-              eventData.state_prov,
-              eventData.country,
-            ]
-              .filter(Boolean)
-              .join(", ")}
-          </div>
+          { !isDivisional ? (
+            <div className="truncate text-[11px] text-neutral-500">
+              {[
+                eventData.city,
+                eventData.state_prov,
+                eventData.country,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+            </div>
+          ) : ( <div> </div> ) }
         </div>
 
           {/* Tracking scope */}
@@ -226,79 +230,85 @@ export default function GamedayWidget({
             />
           </div>
 
-        {/* Controls */}
-        <div className="flex shrink-0 items-center gap-1">
+          {/* Settings */}
+          <div className="relative">
+            <button
+              title="Settings"
+              onClick={() => setSettingsOpen((value) => !value)}
+              className={`icon-button ${settingsOpen ? "active" : ""}`}
+            >
+              <Cog6ToothIcon />
+            </button>
 
-          <button
-            title="Event rankings"
-            onClick={() => setStatsOpen((value) => !value)}
-            className={`icon-button ${
-              statsOpen ? "active" : ""
-            }`}
-          >
-            <ChartBarIcon />
-          </button>
+              {settingsOpen && (
+                <div className="absolute top-full right-0 z-50 mt-2 flex flex-col gap-1 rounded-lg border border-neutral-700 bg-neutral-900 p-1 shadow-xl">
+                <button
+                  title="Event rankings"
+                  onClick={() => setStatsOpen((value) => !value)}
+                  className={`icon-button ${statsOpen ? "active" : ""}`}
+                >
+                  <ChartBarIcon />
+                </button>
 
-          <button
-            title="Track teams"
-            onClick={() => setTeamModalOpen(true)}
-            className={`icon-button ${
-              teamMode ? "active" : ""
-            }`}
-          >
-            <UserGroupIcon />
-          </button>
+                <button
+                  title="Track teams"
+                  onClick={() => setTeamModalOpen(true)}
+                  className={`icon-button ${teamMode ? "active" : ""}`}
+                >
+                  <UserGroupIcon />
+                </button>
 
-          <button
-            title="Choose webcast"
-            onClick={() => setStreamModalOpen(true)}
-            className="icon-button"
-          >
-            <VideoCameraIcon />
-          </button>
+                <button
+                  title="Choose webcast"
+                  onClick={() => setStreamModalOpen(true)}
+                  className="icon-button"
+                >
+                  <VideoCameraIcon />
+                </button>
 
-          <button
-            title="Open chat"
-            onClick={() => setChatOpen((value) => !value)}
-            className={`icon-button ${
-              chatOpen ? "active" : ""
-            }`}
-          >
-            <ChatBubbleLeftRightIcon />
-          </button>
+                <button
+                  title="Open chat"
+                  onClick={() => setChatOpen((value) => !value)}
+                  className={`icon-button ${chatOpen ? "active" : ""}`}
+                >
+                  <ChatBubbleLeftRightIcon />
+                </button>
 
-          <button
-            title="Refresh event data"
-            onClick={reloadDataSources}
-            className="icon-button"
-          >
-            <ArrowPathIcon />
-          </button>
-
-        </div>
+                <button
+                  title="Refresh event data"
+                  onClick={reloadDataSources}
+                  className="icon-button"
+                >
+                  <ArrowPathIcon />
+                </button>
+              </div>
+            )}
+          </div>
 
         {/* Event-local clock */}
-        <div className="hidden rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-neutral-500 sm:block">
-          <EventLocalTime
-            timezone={eventData.timezone}
-          />
-        </div>
+        { !isDivisional ? (
+            <div className="hidden rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-neutral-500 sm:block">
+              <EventLocalTime
+                timezone={eventData.timezone}
+              />
+            </div>
+          ) : ( <div> </div> )
+        }
 
         {/* Next match indicator */}
-        {nextMatch ? (
+        {nexusData ? (
           <div className="hidden items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 sm:flex">
-            <span className="text-[10px] uppercase tracking-wider text-neutral-500">
-              Next
-            </span>
+            <div className="text-[9px] uppercase tracking-widest text-neutral-500">
+              Nexus
+            </div>
 
-            <span className="font-mono text-xs font-bold">
-              {nextMatch.comp_level?.toUpperCase()}
-              {nextMatch.match_number}
-            </span>
+            <div className="text-xs font-semibold">
+              Now queuing: {nexusData.nowQueuing}
+            </div>
           </div>
         ) : (
           <div className="hidden rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-neutral-500 sm:block">
-            No upcoming match
+            No Nexus Data
           </div>
         )}
       </header>
@@ -320,18 +330,6 @@ export default function GamedayWidget({
             </div>
           </div>
         )}
-
-        {nexusData?.nowQueuing && (
-          <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-white/10 bg-black/75 px-3 py-2 backdrop-blur">
-            <div className="text-[9px] uppercase tracking-widest text-neutral-500">
-              Nexus
-            </div>
-
-            <div className="text-xs font-semibold">
-              Now queuing: {nexusData.nowQueuing}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* BOTTOM BAR */}
@@ -347,6 +345,7 @@ export default function GamedayWidget({
               lastMatch={lastMatch}
               eventTimezone={eventData.timezone}
               playoffAlliances={playoffAlliances}
+              playoffType={eventData.playoff_type}
             />
           </div>
         </div>

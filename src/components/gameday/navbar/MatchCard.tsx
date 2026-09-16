@@ -4,9 +4,42 @@ import NextMatchCountdown from "./NextMatchCountdown";
 import { formatAlliance } from "@/lib/tbaFormatters";
 import { formatEventTime } from "@/lib/time";
 
-function compactMatchName(match) {
-  if (!match) return "";
+type MatchAlliance = {
+  team_keys?: string[];
+  score?: number | null;
+};
 
+type Match = {
+  key: string;
+  comp_level: string;
+  match_number: number;
+  set_number?: number | null;
+  predicted_time?: number | null;
+  alliances?: {
+    red?: MatchAlliance;
+    blue?: MatchAlliance;
+  };
+};
+
+type PlayoffAlliance = {
+  name?: string;
+  picks?: string[];
+};
+
+type MatchCardProps = {
+  match: Match;
+  team?: string[];
+  isNext?: boolean;
+  isLast?: boolean;
+  playoffAlliances?: PlayoffAlliance[];
+  playoffType?: number | null;
+  eventTimezone?: string;
+};
+
+function compactMatchName(
+  match: Match,
+  playoffType: number | null
+): string {
   const level = match.comp_level?.toLowerCase() || "";
   const number = match.match_number ?? "";
   const set = match.set_number;
@@ -16,19 +49,23 @@ function compactMatchName(match) {
       return `Qual ${number}`;
 
     case "ef":
-      return set != null
-        ? `EF${set}-${number}`
-        : `EF${number}`;
+      return set != null ? `EF${set}-${number}` : `EF${number}`;
 
     case "qf":
-      return set != null
-        ? `QF${set}-${number}`
-        : `QF${number}`;
+      return set != null ? `QF${set}-${number}` : `QF${number}`;
 
     case "sf":
-      return set != null
-        ? `SF${set}-${number}`
-        : `SF${number}`;
+      switch (playoffType) {
+        case 10:
+        case 11:
+          return `Playoff ${set ?? number}`;
+
+        case 4:
+          return `Round Robin ${number}`;
+
+        default:
+          return set != null ? `SF${set}-${number}` : `SF${number}`;
+      }
 
     case "f":
       return `Final ${number}`;
@@ -38,126 +75,135 @@ function compactMatchName(match) {
   }
 }
 
+function getAllianceName(
+  alliance: PlayoffAlliance | null
+): string {
+  if (!alliance?.name) return "";
+
+  return `${alliance.name.replace("Alliance ", "A")} `;
+}
+
 export default function MatchCard({
   match,
   team = [],
   isNext = false,
   isLast = false,
   playoffAlliances = [],
+  playoffType = null,
   eventTimezone,
-}) {
-  if (!match) return null;
-
-  const red = match?.alliances?.red?.team_keys || [];
-  const blue = match?.alliances?.blue?.team_keys || [];
+}: MatchCardProps) {
+  const red = match.alliances?.red?.team_keys ?? [];
+  const blue = match.alliances?.blue?.team_keys ?? [];
 
   const trackedRed = red.some((key) => team.includes(key));
   const trackedBlue = blue.some((key) => team.includes(key));
 
-  const isPlayoff = match.comp_level !== "qm";
+  const isElimination = match.comp_level !== "qm";
 
-  const redAlliance = isPlayoff
+  const redAlliance = isElimination
     ? playoffAlliances.find((alliance) =>
         alliance?.picks?.some((pick) => red.includes(pick))
-      )
+      ) ?? null
     : null;
 
-  const blueAlliance = isPlayoff
+  const blueAlliance = isElimination
     ? playoffAlliances.find((alliance) =>
         alliance?.picks?.some((pick) => blue.includes(pick))
-      )
+      ) ?? null
     : null;
 
-  const matchName = compactMatchName(match);
+  const matchName = compactMatchName(match, playoffType);
+
+  const time = isNext && match.predicted_time
+    ? <NextMatchCountdown nextMatch={match} />
+    : match.predicted_time
+      ? formatEventTime(match.predicted_time, eventTimezone)
+      : "TBD";
 
   return (
     <article
       className={[
-        "shrink-0 min-w-[168px] max-w-[168px]",
-        "rounded-lg border px-2 py-1.5",
-        "transition",
+        "shrink-0",
+        "min-w-[204px]",
+        "rounded-md",
+        "border",
+        "px-2 py-1",
+        "transition-colors",
         isNext
-          ? "border-white bg-white text-black"
+          ? "border-zinc-500 bg-zinc-900"
           : isLast
-            ? "border-neutral-600 bg-neutral-800"
-            : "border-neutral-800 bg-neutral-900",
+            ? "border-zinc-700 bg-zinc-900/80"
+            : "border-zinc-800 bg-zinc-950",
       ].join(" ")}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-[11px] font-bold uppercase tracking-wide">
-          {matchName}
-        </span>
-
-        <div className="flex shrink-0 items-center gap-1.5">
+      <div className="grid grid-cols-[60px_minmax(0,1fr)_24px] items-center gap-x-2 leading-none">
+        {/* Match name */}
+        <div className="row-span-2 flex h-full flex-col justify-center">
           <span
-            className={`font-mono text-[10px] tabular-nums ${
-              isNext
-                ? "font-bold"
-                : "opacity-60"
-            }`}
+            className={[
+              "text-[10px] font-bold uppercase tracking-wide",
+              isNext ? "text-white" : "text-zinc-300",
+            ].join(" ")}
           >
-            {isNext && match.predicted_time ? (
-              <NextMatchCountdown nextMatch={match} />
-            ) : match.predicted_time ? (
-              formatEventTime(match.predicted_time, eventTimezone)
-            ) : (
-              "TBD"
-            )}
+            {matchName}
           </span>
 
-          {isNext && (
-            <span className="rounded bg-black px-1.5 py-0.5 text-[8px] font-bold tracking-wide text-white">
-              NEXT
-            </span>
-          )}
-
-          {isLast && !isNext && (
-            <span className="text-[8px] font-semibold uppercase opacity-50">
-              LAST
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Alliances */}
-      <div className="mt-1.5 space-y-0.5">
-        <div
-          className={`flex items-center justify-between gap-1 ${
-            trackedRed ? "font-bold" : ""
-          }`}
-        >
-          <span className="min-w-0 truncate text-[11px] text-red-400">
-            {redAlliance
-              ? `${redAlliance.name?.replace("Alliance ", "A")} `
-              : ""}
-            {formatAlliance(red, team)}
+          <span
+            className={[
+              "mt-1 font-mono text-[9px] tabular-nums",
+              isNext
+                ? "font-semibold text-zinc-200"
+                : "text-zinc-500",
+            ].join(" ")}
+          >
+            {time}
           </span>
-
-          {match.alliances?.red?.score != null && (
-            <span className="shrink-0 font-mono text-[11px] font-bold text-red-300">
-              {match.alliances.red.score}
-            </span>
-          )}
         </div>
 
+        {/* Red alliance */}
         <div
-          className={`flex items-center justify-between gap-1 ${
-            trackedBlue ? "font-bold" : ""
-          }`}
+          className={[
+            "min-w-0 truncate text-[10px] text-red-400",
+            trackedRed ? "font-bold" : "font-medium",
+          ].join(" ")}
         >
-          <span className="min-w-0 truncate text-[11px] text-blue-400">
-            {blueAlliance
-              ? `${blueAlliance.name?.replace("Alliance ", "A")} `
-              : ""}
-            {formatAlliance(blue, team)}
-          </span>
+          {getAllianceName(redAlliance)}
+          {formatAlliance(red, team)}
+        </div>
 
-          {match.alliances?.blue?.score != null && (
-            <span className="shrink-0 font-mono text-[11px] font-bold text-blue-300">
-              {match.alliances.blue.score}
-            </span>
-          )}
+        {/* Red score */}
+        <div
+          className={[
+            "text-right font-mono text-[10px] tabular-nums",
+            match.alliances?.red?.score != null
+              ? "font-bold text-red-400"
+              : "text-transparent",
+          ].join(" ")}
+        >
+          {match.alliances?.red?.score ?? "—"}
+        </div>
+
+        {/* Blue alliance */}
+        <div
+          className={[
+            "min-w-0 truncate text-[10px] text-blue-400",
+            trackedBlue ? "font-bold" : "font-medium",
+          ].join(" ")}
+        >
+          {getAllianceName(blueAlliance)}
+          {formatAlliance(blue, team)}
+        </div>
+
+        {/* Blue score */}
+        <div
+          className={[
+            "text-right font-mono text-[10px] tabular-nums",
+            match.alliances?.blue?.score != null
+              ? "font-bold text-blue-400"
+              : "text-transparent",
+          ].join(" ")}
+        >
+          {match.alliances?.blue?.score ?? "—"}
         </div>
       </div>
     </article>
