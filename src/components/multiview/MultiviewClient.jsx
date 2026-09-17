@@ -656,10 +656,10 @@ export default function MultiviewClient({
               onClick={() =>
                 router.push("/")
               }
-              className="icon-button"
+              className="w-[30px] h-[30px] rounded hover:bg-stone-800"
               title="Home"
             >
-              <HomeIcon />
+              <HomeIcon className="w-[17px] h-[17px] justify-self-center"/>
             </button>
 
             {isDivisional &&
@@ -709,11 +709,11 @@ export default function MultiviewClient({
                       eventKey
                     )
                   }
-                  className={`max-w-48 truncate rounded px-2 py-1 text-xs ${
+                  className={`max-w-48 truncate rounded px-2 py-1 bg-stone-800 ${
                     activeKey ===
                     eventKey
-                      ? "ring-2 ring-white"
-                      : "bg-neutral-800"
+                      ? "inset-ring-2 inset-ring-white"
+                      : ""
                   }`}
                 >
                   {(
@@ -739,10 +739,10 @@ export default function MultiviewClient({
                   !value
               )
             }
-            className="icon-button"
+            className="w-[30px] h-[30px] rounded hover:bg-stone-800"
             title="Multiview settings"
           >
-            <Squares2X2Icon />
+            <Squares2X2Icon className="w-[17px] h-[17px] justify-self-center"/>
           </button>
         </header>
 
@@ -872,10 +872,6 @@ export default function MultiviewClient({
 
                     <span className="text-sm font-semibold">
                       Add Event
-                    </span>
-
-                    <span className="text-xs">
-                      Choose an event for this tile
                     </span>
                   </div>
                 </button>
