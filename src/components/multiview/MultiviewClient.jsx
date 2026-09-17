@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import {
   HomeIcon,
@@ -39,29 +44,39 @@ export default function MultiviewClient({
     [events]
   );
 
-  const [streams, setStreams] = useState(initialStreams);
+  const [streams, setStreams] =
+    useState(initialStreams);
 
   /*
    * `priority` controls which widget occupies which layout slot.
    *
    * This is deliberately separate from `streams`.
    */
-  const [priority, setPriority] = useState(
-    initialStreams
-  );
+  const [priority, setPriority] =
+    useState(initialStreams);
 
-  const [layoutKey, setLayoutKey] = useState(null);
-  const [activeKey, setActiveKey] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [layoutKey, setLayoutKey] =
+    useState(null);
+  const [activeKey, setActiveKey] =
+    useState(null);
+  const [sidebarOpen, setSidebarOpen] =
+    useState(false);
 
   const [eventPickerOpen, setEventPickerOpen] =
     useState(false);
-  const [eventSearch, setEventSearch] = useState("");
+  const [eventSearch, setEventSearch] =
+    useState("");
   const [availableEvents, setAvailableEvents] =
     useState([]);
   const [eventsLoading, setEventsLoading] =
     useState(false);
 
+  /*
+   * Labels are keyed by event/widget identity.
+   *
+   * They are metadata about the widgets themselves and
+   * therefore must not depend on layout slot order.
+   */
   const [labels, setLabels] = useState({});
 
   const selectedLayoutKey =
@@ -81,7 +96,10 @@ export default function MultiviewClient({
    * for the visual presentation. This does not modify priority.
    */
   const slotOrder = useMemo(() => {
-    if (!activeKey || !priority.includes(activeKey)) {
+    if (
+      !activeKey ||
+      !priority.includes(activeKey)
+    ) {
       return priority;
     }
 
@@ -93,6 +111,11 @@ export default function MultiviewClient({
     ];
   }, [activeKey, priority]);
 
+  /*
+   * A GamedayWidget reports its label using its stable
+   * event key. The callback itself is stable, so it does
+   * not cause widget effects to fire on every Multiview render.
+   */
   const registerLabel = useCallback(
     (eventKey, label) => {
       setLabels((current) => {
@@ -108,6 +131,31 @@ export default function MultiviewClient({
     },
     []
   );
+
+  /*
+   * Remove labels for widgets that no longer exist.
+   *
+   * This intentionally depends only on `streams`.
+   * Changing priority or slot order does not affect labels.
+   */
+  useEffect(() => {
+    setLabels((current) => {
+      let changed = false;
+      const next = {};
+
+      for (const [eventKey, label] of Object.entries(
+        current
+      )) {
+        if (streams.includes(eventKey)) {
+          next[eventKey] = label;
+        } else {
+          changed = true;
+        }
+      }
+
+      return changed ? next : current;
+    });
+  }, [streams]);
 
   /*
    * Move only the priority array.
@@ -264,6 +312,7 @@ export default function MultiviewClient({
       ];
 
       setStreams(nextStreams);
+
       setPriority((current) => [
         ...current,
         eventKey,
@@ -271,6 +320,37 @@ export default function MultiviewClient({
 
       updateUrl(nextStreams);
       setEventPickerOpen(false);
+    },
+    [streams, updateUrl]
+  );
+
+  const removeEvent = useCallback(
+    (eventKey) => {
+      const nextStreams = streams.filter(
+        (key) => key !== eventKey
+      );
+
+      setStreams(nextStreams);
+
+      setPriority((current) =>
+        current.filter((key) => key !== eventKey)
+      );
+
+      setActiveKey((current) =>
+        current === eventKey ? null : current
+      );
+
+      setLabels((current) => {
+        if (!(eventKey in current)) {
+          return current;
+        }
+
+        const next = { ...current };
+        delete next[eventKey];
+        return next;
+      });
+
+      updateUrl(nextStreams);
     },
     [streams, updateUrl]
   );
@@ -361,35 +441,39 @@ export default function MultiviewClient({
             )}
           </div>
 
+          {/*
+           * Labels belong to widgets, not slots.
+           *
+           * Therefore this MUST map over `streams`, never
+           * `slotOrder`. Changing priority cannot reorder
+           * this collection.
+           */}
           <div className="flex min-w-0 gap-1 overflow-hidden">
-            {slotOrder.map(
-              (eventKey, index) => (
-                <button
-                  key={eventKey}
-                  onClick={() =>
-                    setActiveKey(
-                      (current) =>
-                        current === eventKey
-                          ? null
-                          : eventKey
-                    )
-                  }
-                  className={`max-w-48 truncate rounded px-2 py-1 text-xs ${
-                    activeKey === eventKey
-                      ? "ring-2 ring-white"
-                      : "bg-neutral-800"
-                  }`}
-                >
-                  {(
-                    labels[eventKey] ??
-                    `Stream ${index + 1}`
-                  ).replace(
-                    "- FIRST Robotics Competition",
-                    ""
-                  )}
-                </button>
-              )
-            )}
+            {streams.map((eventKey, index) => (
+              <button
+                key={eventKey}
+                onClick={() =>
+                  setActiveKey((current) =>
+                    current === eventKey
+                      ? null
+                      : eventKey
+                  )
+                }
+                className={`max-w-48 truncate rounded px-2 py-1 text-xs ${
+                  activeKey === eventKey
+                    ? "ring-2 ring-white"
+                    : "bg-neutral-800"
+                }`}
+              >
+                {(
+                  labels[eventKey] ??
+                  `Stream ${index + 1}`
+                ).replace(
+                  "- FIRST Robotics Competition",
+                  ""
+                )}
+              </button>
+            ))}
           </div>
 
           <button
@@ -407,8 +491,6 @@ export default function MultiviewClient({
 
         <main className="relative min-h-0 flex-1">
           {/*
-           * CRITICAL:
-           *
            * Render widgets in stable `streams` order,
            * NOT in `priority` order.
            *
@@ -565,6 +647,17 @@ export default function MultiviewClient({
                   >
                     ↓
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => removeEvent(eventKey)}
+                    className="icon-button shrink-0"
+                    title={`Remove ${labels[eventKey] ?? eventKey}`}
+                    aria-label={`Remove ${labels[eventKey] ?? eventKey}`}
+                  >
+                    <XMarkIcon />
+                  </button>
+                  
                 </div>
               </div>
             )
