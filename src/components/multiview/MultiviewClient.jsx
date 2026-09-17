@@ -14,7 +14,11 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 
-import { LAYOUTS, pickLayout } from "@/lib/layouts";
+import {
+  LAYOUTS,
+  pickLayout,
+  pickHighlightLayout,
+} from "@/lib/layouts";
 import EventLocalTime from "../gameday/navbar/EventLocalTime";
 import GamedayWidget from "../gameday/GamedayWidget";
 
@@ -29,16 +33,19 @@ export default function MultiviewClient({
    * `streams` is the stable set of widgets Multiview owns.
    *
    * IMPORTANT:
-   * This array is intentionally never reordered.
-   * React therefore sees the same GamedayWidget siblings for
-   * the entire lifetime of the Multiview.
+   * This array is never reordered.
+   *
+   * React therefore sees the same GamedayWidget siblings
+   * for the entire lifetime of Multiview.
    */
   const initialStreams = useMemo(
     () => [
       ...new Set(
         events
           .filter(Boolean)
-          .map((event) => String(event))
+          .map((event) =>
+            String(event)
+          )
       ),
     ],
     [events]
@@ -48,42 +55,104 @@ export default function MultiviewClient({
     useState(initialStreams);
 
   /*
-   * `priority` controls which widget occupies which layout slot.
+   * `priority` controls which widget occupies which
+   * layout slot.
    *
    * This is deliberately separate from `streams`.
    */
   const [priority, setPriority] =
     useState(initialStreams);
 
+  /*
+   * Explicitly selected layout.
+   *
+   * null means use the automatically selected layout.
+   */
   const [layoutKey, setLayoutKey] =
     useState(null);
+
+  /*
+   * When a widget is highlighted, `activeKey` is promoted
+   * to slot zero.
+   */
   const [activeKey, setActiveKey] =
     useState(null);
+
+  /*
+   * When a widget is highlighted, this temporarily replaces
+   * the normal layout.
+   *
+   * null means no highlight layout is active.
+   */
+  const [
+    highlightLayoutKey,
+    setHighlightLayoutKey,
+  ] = useState(null);
+
   const [sidebarOpen, setSidebarOpen] =
     useState(false);
 
-  const [eventPickerOpen, setEventPickerOpen] =
-    useState(false);
-  const [eventSearch, setEventSearch] =
-    useState("");
-  const [availableEvents, setAvailableEvents] =
-    useState([]);
-  const [eventsLoading, setEventsLoading] =
-    useState(false);
+  /*
+   * Automatic match-imminence focusing is intentionally
+   * session-only for now. No localStorage.
+   */
+  const [
+    autoFocusMatches,
+    setAutoFocusMatches,
+  ] = useState(true);
+
+  const [
+    eventPickerOpen,
+    setEventPickerOpen,
+  ] = useState(false);
+
+  const [
+    eventSearch,
+    setEventSearch,
+  ] = useState("");
+
+  const [
+    availableEvents,
+    setAvailableEvents,
+  ] = useState([]);
+
+  const [
+    eventsLoading,
+    setEventsLoading,
+  ] = useState(false);
 
   /*
-   * Labels are keyed by event/widget identity.
+   * Labels are metadata about widgets themselves.
    *
-   * They are metadata about the widgets themselves and
-   * therefore must not depend on layout slot order.
+   * They must never depend on slot order.
    */
-  const [labels, setLabels] = useState({});
+  const [labels, setLabels] =
+    useState({});
 
+  /*
+   * The normal layout is based on the number of streams.
+   */
+  const autoLayoutKey =
+    pickLayout(
+      streams.length || 1
+    );
+
+  /*
+   * The user's explicit layout wins over auto layout.
+   */
+  const baseLayoutKey =
+    layoutKey ?? autoLayoutKey;
+
+  /*
+   * A highlight layout temporarily overrides the base layout.
+   */
   const selectedLayoutKey =
-    layoutKey ?? pickLayout(streams.length || 1);
+    highlightLayoutKey ??
+    baseLayoutKey;
 
   const layout =
-    LAYOUTS[selectedLayoutKey] ?? LAYOUTS.single;
+    LAYOUTS[selectedLayoutKey] ??
+    LAYOUTS.single;
 
   const presentation =
     layout.presentation ?? {
@@ -92,8 +161,12 @@ export default function MultiviewClient({
     };
 
   /*
-   * The selected event is temporarily promoted to slot zero
-   * for the visual presentation. This does not modify priority.
+   * Promote activeKey to slot zero without changing
+   * priority itself.
+   *
+   * This means manually highlighting or automatically
+   * focusing an event does not permanently reorder the
+   * user's priority list.
    */
   const slotOrder = useMemo(() => {
     if (
@@ -106,20 +179,25 @@ export default function MultiviewClient({
     return [
       activeKey,
       ...priority.filter(
-        (eventKey) => eventKey !== activeKey
+        (eventKey) =>
+          eventKey !== activeKey
       ),
     ];
-  }, [activeKey, priority]);
+  }, [
+    activeKey,
+    priority,
+  ]);
 
   /*
    * A GamedayWidget reports its label using its stable
-   * event key. The callback itself is stable, so it does
-   * not cause widget effects to fire on every Multiview render.
+   * event key.
    */
   const registerLabel = useCallback(
     (eventKey, label) => {
       setLabels((current) => {
-        if (current[eventKey] === label) {
+        if (
+          current[eventKey] === label
+        ) {
           return current;
         }
 
@@ -135,38 +213,43 @@ export default function MultiviewClient({
   /*
    * Remove labels for widgets that no longer exist.
    *
-   * This intentionally depends only on `streams`.
-   * Changing priority or slot order does not affect labels.
+   * Priority changes do not affect labels.
    */
   useEffect(() => {
     setLabels((current) => {
       let changed = false;
       const next = {};
 
-      for (const [eventKey, label] of Object.entries(
-        current
-      )) {
-        if (streams.includes(eventKey)) {
-          next[eventKey] = label;
+      for (const [
+        eventKey,
+        label,
+      ] of Object.entries(current)) {
+        if (
+          streams.includes(
+            eventKey
+          )
+        ) {
+          next[eventKey] =
+            label;
         } else {
           changed = true;
         }
       }
 
-      return changed ? next : current;
+      return changed
+        ? next
+        : current;
     });
   }, [streams]);
 
   /*
    * Move only the priority array.
-   *
-   * `streams` — and therefore React's widget order —
-   * remains completely untouched.
    */
   const move = useCallback(
     (position, direction) => {
       setPriority((current) => {
-        const target = position + direction;
+        const target =
+          position + direction;
 
         if (
           target < 0 ||
@@ -175,9 +258,14 @@ export default function MultiviewClient({
           return current;
         }
 
-        const next = [...current];
+        const next = [
+          ...current,
+        ];
 
-        [next[position], next[target]] = [
+        [
+          next[position],
+          next[target],
+        ] = [
           next[target],
           next[position],
         ];
@@ -191,24 +279,42 @@ export default function MultiviewClient({
   /*
    * Update only the event portion of the URL.
    */
-  const updateUrl = useCallback((eventKeys) => {
-    const url = new URL(window.location.href);
+  const updateUrl = useCallback(
+    (eventKeys) => {
+      const url =
+        new URL(
+          window.location.href
+        );
 
-    url.searchParams.delete("event");
+      url.searchParams.delete(
+        "event"
+      );
 
-    for (const eventKey of eventKeys) {
-      url.searchParams.append("event", eventKey);
-    }
+      for (const eventKey of eventKeys) {
+        url.searchParams.append(
+          "event",
+          eventKey
+        );
+      }
 
-    window.history.pushState({}, "", url);
-  }, []);
+      window.history.pushState(
+        {},
+        "",
+        url
+      );
+    },
+    []
+  );
 
   /*
    * Browser Back / Forward reconstructs the event set.
    */
   useEffect(() => {
     const handlePopState = () => {
-      const url = new URL(window.location.href);
+      const url =
+        new URL(
+          window.location.href
+        );
 
       const eventKeys = [
         ...new Set(
@@ -221,6 +327,7 @@ export default function MultiviewClient({
       setStreams(eventKeys);
       setPriority(eventKeys);
       setActiveKey(null);
+      setHighlightLayoutKey(null);
     };
 
     window.addEventListener(
@@ -237,6 +344,82 @@ export default function MultiviewClient({
   }, []);
 
   /*
+   * Automatic focus from match imminence.
+   *
+   * The widget only reports that its tracked match is
+   * imminent. Multiview owns the policy decision.
+   */
+  const handleMatchImminent =
+    useCallback(
+      (eventKey) => {
+        if (!autoFocusMatches) {
+          return;
+        }
+
+        if (
+          !streams.includes(
+            eventKey
+          )
+        ) {
+          return;
+        }
+
+        /*
+         * The number that matters here is the number of
+         * slots currently being displayed, not the number
+         * of occupied streams.
+         */
+        const highlightKey =
+          pickHighlightLayout(
+            layout.slots.length
+          );
+
+        setActiveKey(eventKey);
+        setHighlightLayoutKey(
+          highlightKey
+        );
+      },
+      [
+        autoFocusMatches,
+        streams,
+        layout.slots.length,
+      ]
+    );
+
+  /*
+   * Manual highlighting.
+   *
+   * Clicking a stream in the top bar uses the same highlight
+   * behavior as an imminent match, but does not depend on the
+   * automatic-focus toggle.
+   */
+  const toggleActive = useCallback(
+    (eventKey) => {
+      if (
+        activeKey === eventKey
+      ) {
+        setActiveKey(null);
+        setHighlightLayoutKey(
+          null
+        );
+        return;
+      }
+
+      setActiveKey(eventKey);
+
+      setHighlightLayoutKey(
+        pickHighlightLayout(
+          layout.slots.length
+        )
+      );
+    },
+    [
+      activeKey,
+      layout.slots.length,
+    ]
+  );
+
+  /*
    * Fetch active events only when the picker is opened.
    */
   useEffect(() => {
@@ -250,12 +433,13 @@ export default function MultiviewClient({
       setEventsLoading(true);
 
       try {
-        const response = await fetch(
-          "/api/events/active",
-          {
-            cache: "no-store",
-          }
-        );
+        const response =
+          await fetch(
+            "/api/events/active",
+            {
+              cache: "no-store",
+            }
+          );
 
         if (!response.ok) {
           throw new Error(
@@ -263,11 +447,14 @@ export default function MultiviewClient({
           );
         }
 
-        const data = await response.json();
+        const data =
+          await response.json();
 
         if (!cancelled) {
           setAvailableEvents(
-            Array.isArray(data) ? data : []
+            Array.isArray(data)
+              ? data
+              : []
           );
         }
       } catch (error) {
@@ -277,11 +464,15 @@ export default function MultiviewClient({
         );
 
         if (!cancelled) {
-          setAvailableEvents([]);
+          setAvailableEvents(
+            []
+          );
         }
       } finally {
         if (!cancelled) {
-          setEventsLoading(false);
+          setEventsLoading(
+            false
+          );
         }
       }
     }
@@ -293,16 +484,24 @@ export default function MultiviewClient({
     };
   }, [eventPickerOpen]);
 
-  const openEventPicker = useCallback(() => {
-    setEventSearch("");
-    setEventPickerOpen(true);
-  }, []);
+  const openEventPicker =
+    useCallback(() => {
+      setEventSearch("");
+      setEventPickerOpen(
+        true
+      );
+    }, []);
 
   const addEvent = useCallback(
     (event) => {
-      const eventKey = String(event.key);
+      const eventKey =
+        String(event.key);
 
-      if (streams.includes(eventKey)) {
+      if (
+        streams.includes(
+          eventKey
+        )
+      ) {
         return;
       }
 
@@ -311,294 +510,349 @@ export default function MultiviewClient({
         eventKey,
       ];
 
-      setStreams(nextStreams);
+      setStreams(
+        nextStreams
+      );
 
       setPriority((current) => [
         ...current,
         eventKey,
       ]);
 
-      updateUrl(nextStreams);
-      setEventPickerOpen(false);
+      updateUrl(
+        nextStreams
+      );
+
+      setEventPickerOpen(
+        false
+      );
     },
-    [streams, updateUrl]
+    [
+      streams,
+      updateUrl,
+    ]
   );
 
-  const removeEvent = useCallback(
-    (eventKey) => {
-      const nextStreams = streams.filter(
-        (key) => key !== eventKey
-      );
-
-      setStreams(nextStreams);
-
-      setPriority((current) =>
-        current.filter((key) => key !== eventKey)
-      );
-
-      setActiveKey((current) =>
-        current === eventKey ? null : current
-      );
-
-      setLabels((current) => {
-        if (!(eventKey in current)) {
-          return current;
-        }
-
-        const next = { ...current };
-        delete next[eventKey];
-        return next;
-      });
-
-      updateUrl(nextStreams);
-    },
-    [streams, updateUrl]
-  );
-
-  const activeEventKeys = useMemo(
-    () => new Set(streams),
-    [streams]
-  );
-
-  const filteredEvents = useMemo(() => {
-    const query = eventSearch
-      .trim()
-      .toLowerCase();
-
-    return availableEvents
-      .filter(
-        (event) =>
-          !activeEventKeys.has(
-            String(event.key)
-          )
-      )
-      .filter((event) => {
-        if (!query) {
-          return true;
-        }
-
-        return [
-          event.name,
-          event.short_name,
-          event.key,
-          event.city,
-          event.state_prov,
-          event.country,
-        ]
-          .filter(Boolean)
-          .some((value) =>
-            String(value)
-              .toLowerCase()
-              .includes(query)
+  const removeEvent =
+    useCallback(
+      (eventKey) => {
+        const nextStreams =
+          streams.filter(
+            (key) =>
+              key !== eventKey
           );
-      });
-  }, [
-    availableEvents,
-    activeEventKeys,
-    eventSearch,
-  ]);
 
-  const emptySlotCount = Math.max(
-    0,
-    layout.slots.length - streams.length
-  );
+        setStreams(
+          nextStreams
+        );
+
+        setPriority((current) =>
+          current.filter(
+            (key) =>
+              key !== eventKey
+          )
+        );
+
+        setActiveKey((current) =>
+          current === eventKey
+            ? null
+            : current
+        );
+
+        setHighlightLayoutKey(
+          (current) =>
+            activeKey === eventKey
+              ? null
+              : current
+        );
+
+        setLabels((current) => {
+          if (
+            !(eventKey in current)
+          ) {
+            return current;
+          }
+
+          const next = {
+            ...current,
+          };
+
+          delete next[eventKey];
+
+          return next;
+        });
+
+        updateUrl(
+          nextStreams
+        );
+      },
+      [
+        streams,
+        activeKey,
+        updateUrl,
+      ]
+    );
+
+  const activeEventKeys =
+    useMemo(
+      () =>
+        new Set(streams),
+      [streams]
+    );
+
+  const filteredEvents =
+    useMemo(() => {
+      const query =
+        eventSearch
+          .trim()
+          .toLowerCase();
+
+      return availableEvents
+        .filter(
+          (event) =>
+            !activeEventKeys.has(
+              String(event.key)
+            )
+        )
+        .filter((event) => {
+          if (!query) {
+            return true;
+          }
+
+          return [
+            event.name,
+            event.short_name,
+            event.key,
+            event.city,
+            event.state_prov,
+            event.country,
+          ]
+            .filter(Boolean)
+            .some((value) =>
+              String(value)
+                .toLowerCase()
+                .includes(
+                  query
+                )
+            );
+        });
+    }, [
+      availableEvents,
+      activeEventKeys,
+      eventSearch,
+    ]);
+
+  /*
+   * Empty slots are always the slots after the occupied
+   * streams in the current layout.
+   */
+  const emptySlotCount =
+    Math.max(
+      0,
+      layout.slots.length -
+        streams.length
+    );
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-black text-white">
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-10 shrink-0 items-center justify-between border-b border-neutral-800 px-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <button
-              onClick={() => router.push("/")}
-              className="icon-button"
-              title="Home"
-            >
-              <HomeIcon />
-            </button>
+  <div className="flex min-w-0 items-center gap-2">
+    <button
+      onClick={() => router.push("/")}
+      className="icon-button"
+      title="Home"
+    >
+      <HomeIcon />
+    </button>
 
-            {isDivisional && parentEvent ? (
-              <div className="min-w-0">
-                <div className="truncate text-sm font-bold">
-                  {parentEvent.name}
-                </div>
+    {isDivisional && parentEvent ? (
+      <div className="min-w-0">
+        <div className="truncate text-sm font-bold">
+          {parentEvent.name}
+        </div>
 
-                <div className="text-[10px] text-neutral-500">
-                  <EventLocalTime
-                    timezone={parentEvent.timezone}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="text-sm font-bold">
-                  FieldView
-                </div>
+        <div className="text-[10px] text-neutral-500">
+          <EventLocalTime timezone={parentEvent.timezone} />
+        </div>
+      </div>
+    ) : (
+      <div>
+        <div className="text-sm font-bold">
+          FieldView
+        </div>
 
-                <div className="text-[10px] text-neutral-500">
-                  Powered by The Blue Alliance
-                </div>
-              </div>
-            )}
-          </div>
+        <div className="text-[10px] text-neutral-500">
+          Powered by The Blue Alliance
+        </div>
+      </div>
+    )}
+  </div>
 
-          {/*
-           * Labels belong to widgets, not slots.
-           *
-           * Therefore this MUST map over `streams`, never
-           * `slotOrder`. Changing priority cannot reorder
-           * this collection.
-           */}
-          <div className="flex min-w-0 gap-1 overflow-hidden">
-            {streams.map((eventKey, index) => (
-              <button
-                key={eventKey}
-                onClick={() =>
-                  setActiveKey((current) =>
-                    current === eventKey
-                      ? null
-                      : eventKey
-                  )
-                }
-                className={`max-w-48 truncate rounded px-2 py-1 text-xs ${
-                  activeKey === eventKey
-                    ? "ring-2 ring-white"
-                    : "bg-neutral-800"
-                }`}
-              >
-                {(
-                  labels[eventKey] ??
-                  `Stream ${index + 1}`
-                ).replace(
-                  "- FIRST Robotics Competition",
-                  ""
-                )}
-              </button>
-            ))}
-          </div>
+  <div className="flex min-w-0 gap-1 overflow-hidden">
+    {streams.map((eventKey, index) => (
+      <button
+        key={eventKey}
+        onClick={() => toggleActive(eventKey)}
+        className={`max-w-48 truncate rounded px-2 py-1 text-xs ${
+          activeKey === eventKey
+            ? "ring-2 ring-white"
+            : "bg-neutral-800"
+        }`}
+      >
+        {(labels[eventKey] ?? `Stream ${index + 1}`).replace(
+          "- FIRST Robotics Competition",
+          ""
+        )}
+      </button>
+    ))}
+  </div>
 
-          <button
-            onClick={() =>
-              setSidebarOpen(
-                (value) => !value
-              )
-            }
-            className="icon-button"
-            title="Multiview settings"
-          >
-            <Squares2X2Icon />
-          </button>
-        </header>
+  <button
+    onClick={() => setSidebarOpen((value) => !value)}
+    className="icon-button"
+    title="Multiview settings"
+  >
+    <Squares2X2Icon />
+  </button>
+</header>
 
         <main className="relative min-h-0 flex-1">
           {/*
-           * Render widgets in stable `streams` order,
-           * NOT in `priority` order.
+           * Render widgets in stable `streams` order.
            *
-           * Priority only determines `slotIndex`.
-           */}
-          {streams.map((eventKey) => {
-            const slotIndex =
-              slotOrder.indexOf(eventKey);
+           * `priority` and `activeKey` only determine
+           * where each widget is placed.
+           */
+          }
+          {streams.map(
+            (eventKey) => {
+              const slotIndex =
+                slotOrder.indexOf(
+                  eventKey
+                );
 
-            const geometry =
-              layout.slots[slotIndex];
+              const geometry =
+                layout.slots[
+                  slotIndex
+                ];
 
-            const visible =
-              Boolean(geometry);
+              const visible =
+                Boolean(
+                  geometry
+                );
 
-            return (
-              <div
-                key={eventKey}
-                className={
-                  visible
-                    ? "absolute"
-                    : "pointer-events-none absolute invisible"
-                }
-                style={
-                  visible
-                    ? {
-                        left: `${geometry.x}%`,
-                        top: `${geometry.y}%`,
-                        width: `${geometry.w}%`,
-                        height: `${geometry.h}%`,
-                        transition:
-                          "all 250ms ease",
-                      }
-                    : {
-                        left: 0,
-                        top: 0,
-                        width: 1,
-                        height: 1,
-                      }
-                }
-              >
-                <GamedayWidget
-                  event={eventKey}
-                  isDivisional={
-                    isDivisional
+              return (
+                <div
+                  key={eventKey}
+                  className={
+                    visible
+                      ? "absolute"
+                      : "pointer-events-none absolute invisible"
                   }
-                  registerLabel={(label) =>
-                    registerLabel(
-                      eventKey,
+                  style={
+                    visible
+                      ? {
+                          left: `${geometry.x}%`,
+                          top: `${geometry.y}%`,
+                          width: `${geometry.w}%`,
+                          height: `${geometry.h}%`,
+                          transition:
+                            "all 300ms ease",
+                        }
+                      : {
+                          left: 0,
+                          top: 0,
+                          width: 1,
+                          height: 1,
+                        }
+                  }
+                >
+                  <GamedayWidget
+                    event={eventKey}
+                    isDivisional={
+                      isDivisional
+                    }
+                    registerLabel={(
                       label
-                    )
-                  }
-                  multiview={{
-                    layoutKey:
-                      selectedLayoutKey,
-                    ...presentation,
-                    slotIndex,
-                    visible,
-                  }}
-                />
-              </div>
-            );
-          })}
+                    ) =>
+                      registerLabel(
+                        eventKey,
+                        label
+                      )
+                    }
+                    onMatchImminent={() =>
+                      handleMatchImminent(
+                        eventKey
+                      )
+                    }
+                    multiview={{
+                      layoutKey:
+                        selectedLayoutKey,
+                      ...presentation,
+                      slotIndex,
+                      visible,
+                    }}
+                  />
+                </div>
+              );
+            }
+          )}
 
           {Array.from({
-            length: emptySlotCount,
-          }).map((_, index) => {
-            const slotIndex =
-              streams.length + index;
+            length:
+              emptySlotCount,
+          }).map(
+            (_, index) => {
+              const slotIndex =
+                streams.length +
+                index;
 
-            const geometry =
-              layout.slots[slotIndex];
+              const geometry =
+                layout.slots[
+                  slotIndex
+                ];
 
-            if (!geometry) {
-              return null;
+              if (!geometry) {
+                return null;
+              }
+
+              return (
+                <button
+                  key={`empty-slot-${slotIndex}`}
+                  onClick={
+                    openEventPicker
+                  }
+                  className="absolute flex items-center justify-center border border-dashed border-neutral-700 bg-neutral-950/80 transition-colors hover:border-neutral-500 hover:bg-neutral-900"
+                  style={{
+                    left: `${geometry.x}%`,
+                    top: `${geometry.y}%`,
+                    width: `${geometry.w}%`,
+                    height: `${geometry.h}%`,
+                  }}
+                >
+                  <div className="flex flex-col items-center gap-2 text-neutral-500">
+                    <PlusIcon className="h-8 w-8" />
+
+                    <span className="text-sm font-semibold">
+                      Add Event
+                    </span>
+
+                    <span className="text-xs">
+                      Choose an event for this tile
+                    </span>
+                  </div>
+                </button>
+              );
             }
-
-            return (
-              <button
-                key={`empty-slot-${slotIndex}`}
-                onClick={openEventPicker}
-                className="absolute flex items-center justify-center border border-dashed border-neutral-700 bg-neutral-950/80 transition-colors hover:border-neutral-500 hover:bg-neutral-900"
-                style={{
-                  left: `${geometry.x}%`,
-                  top: `${geometry.y}%`,
-                  width: `${geometry.w}%`,
-                  height: `${geometry.h}%`,
-                }}
-              >
-                <div className="flex flex-col items-center gap-2 text-neutral-500">
-                  <PlusIcon className="h-8 w-8" />
-
-                  <span className="text-sm font-semibold">
-                    Add Event
-                  </span>
-
-                  <span className="text-xs">
-                    Choose an event for this tile
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+          )}
         </main>
       </div>
 
       <div
-        onClick={() => setSidebarOpen(false)}
+        onClick={() =>
+          setSidebarOpen(false)
+        }
         className={`fixed inset-0 z-40 bg-black/50 transition-opacity ${
           sidebarOpen
             ? "opacity-100"
@@ -617,47 +871,104 @@ export default function MultiviewClient({
           Multiview
         </div>
 
+        <div className="mb-4 rounded-lg border border-neutral-800 bg-neutral-950 p-3">
+          <label className="flex cursor-pointer items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-white">
+                Focus imminent matches
+              </div>
+
+              <div className="mt-1 text-[10px] leading-4 text-neutral-500">
+                Automatically highlight an event when
+                a tracked team's match is approaching.
+              </div>
+            </div>
+
+            <input
+              type="checkbox"
+              checked={
+                autoFocusMatches
+              }
+              onChange={(event) =>
+                setAutoFocusMatches(
+                  event.target
+                    .checked
+                )
+              }
+              className="h-4 w-4 shrink-0"
+            />
+          </label>
+        </div>
+
         <div className="mb-4 space-y-1">
           {priority.map(
-            (eventKey, position) => (
+            (
+              eventKey,
+              position
+            ) => (
               <div
                 key={eventKey}
                 className="flex items-center justify-between rounded bg-neutral-800 px-2 py-1"
               >
                 <span className="truncate text-xs">
-                  {labels[eventKey] ??
-                    `Stream ${position + 1}`}
+                  {labels[
+                    eventKey
+                  ] ??
+                    `Stream ${
+                      position + 1
+                    }`}
                 </span>
 
                 <div className="flex gap-1">
                   <button
                     onClick={() =>
-                      move(position, -1)
+                      move(
+                        position,
+                        -1
+                      )
                     }
                     className="rounded bg-neutral-700 px-2 py-0.5 text-xs"
+                    title="Move up"
                   >
                     ↑
                   </button>
 
                   <button
                     onClick={() =>
-                      move(position, 1)
+                      move(
+                        position,
+                        1
+                      )
                     }
                     className="rounded bg-neutral-700 px-2 py-0.5 text-xs"
+                    title="Move down"
                   >
                     ↓
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => removeEvent(eventKey)}
+                    onClick={() =>
+                      removeEvent(
+                        eventKey
+                      )
+                    }
                     className="icon-button shrink-0"
-                    title={`Remove ${labels[eventKey] ?? eventKey}`}
-                    aria-label={`Remove ${labels[eventKey] ?? eventKey}`}
+                    title={`Remove ${
+                      labels[
+                        eventKey
+                      ] ??
+                      eventKey
+                    }`}
+                    aria-label={`Remove ${
+                      labels[
+                        eventKey
+                      ] ??
+                      eventKey
+                    }`}
                   >
                     <XMarkIcon />
                   </button>
-                  
                 </div>
               </div>
             )
@@ -668,15 +979,29 @@ export default function MultiviewClient({
           Layouts
         </div>
 
-        {Object.entries(LAYOUTS).map(
+        {Object.entries(
+          LAYOUTS
+        ).map(
           ([key, value]) => (
             <button
               key={key}
-              onClick={() =>
-                setLayoutKey(key)
-              }
+              onClick={() => {
+                setLayoutKey(
+                  key
+                );
+
+                /*
+                 * A manually selected layout is now the
+                 * base layout. Clear any temporary automatic
+                 * highlight layout.
+                 */
+                setHighlightLayoutKey(
+                  null
+                );
+              }}
               className={`block w-full rounded px-2 py-1 text-left text-sm ${
-                selectedLayoutKey === key
+                selectedLayoutKey ===
+                key
                   ? "bg-neutral-700"
                   : "hover:bg-neutral-800"
               }`}
@@ -685,13 +1010,37 @@ export default function MultiviewClient({
             </button>
           )
         )}
+
+        <button
+          onClick={() => {
+            setLayoutKey(null);
+            setHighlightLayoutKey(
+              null
+            );
+          }}
+          className={`mt-2 block w-full rounded px-2 py-1 text-left text-sm ${
+            layoutKey === null
+              ? "bg-green-700"
+              : "hover:bg-neutral-800"
+          }`}
+        >
+          Auto Layout (
+          {
+            LAYOUTS[
+              autoLayoutKey
+            ].name
+          }
+          )
+        </button>
       </aside>
 
       {eventPickerOpen && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
           onClick={() =>
-            setEventPickerOpen(false)
+            setEventPickerOpen(
+              false
+            )
           }
         >
           <div
@@ -707,7 +1056,9 @@ export default function MultiviewClient({
 
               <button
                 onClick={() =>
-                  setEventPickerOpen(false)
+                  setEventPickerOpen(
+                    false
+                  )
                 }
                 className="icon-button"
                 title="Close"
@@ -746,9 +1097,13 @@ export default function MultiviewClient({
                   {filteredEvents.map(
                     (event) => (
                       <button
-                        key={event.key}
+                        key={
+                          event.key
+                        }
                         onClick={() =>
-                          addEvent(event)
+                          addEvent(
+                            event
+                          )
                         }
                         className="w-full rounded px-3 py-2 text-left transition-colors hover:bg-neutral-800"
                       >
@@ -760,12 +1115,16 @@ export default function MultiviewClient({
 
                         <div className="mt-0.5 flex gap-2 text-xs text-neutral-500">
                           <span>
-                            {event.key}
+                            {
+                              event.key
+                            }
                           </span>
 
                           {event.city && (
                             <span>
-                              {event.city}
+                              {
+                                event.city
+                              }
                               {event.state_prov
                                 ? `, ${event.state_prov}`
                                 : ""}

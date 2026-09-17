@@ -29,6 +29,7 @@ import { usePlayoffAlliances } from "./hooks/usePlayoffAlliances";
 import { useMatches } from "./hooks/useMatches";
 import { useTrackedMatches } from "./hooks/useTrackedMatches";
 import { useStreamController } from "./hooks/useStreamController";
+import { useMatchImminence } from "../multiview/hooks/useMatchImminence";
 
 const EMPTY_TEAMS = [];
 
@@ -36,11 +37,15 @@ export default function GamedayWidget({
   event,
   initialTeams = EMPTY_TEAMS,
   registerLabel,
+  onMatchImminent,
   isDivisional = false,
   multiview = {},
 }) {
-  const { event: eventData, loading, error } =
-    useEvent(event);
+  const {
+    event: eventData,
+    loading,
+    error,
+  } = useEvent(event);
 
   const { teams } = useTeams(event);
 
@@ -83,25 +88,18 @@ export default function GamedayWidget({
     useState(false);
 
   /*
-   * `initialTeams` is an actual prop for direct GamedayWidget
-   * callers. Keep it synchronized when that prop genuinely
-   * changes.
+   * `initialTeams` is an actual prop for direct
+   * GamedayWidget callers.
    *
-   * The default value is module-scoped (`EMPTY_TEAMS`) so
-   * callers that omit the prop do not receive a new [] on
-   * every render.
+   * The module-scoped default keeps omitted props stable.
    */
   useEffect(() => {
     setTrackedTeams(initialTeams);
   }, [initialTeams]);
 
   /*
-   * The label belongs to this widget/event, not its current
-   * Multiview layout slot.
-   *
-   * Depend only on the primitive label value. Multiview's
-   * registerLabel wrapper may be recreated when Multiview
-   * renders, but that should not cause this effect to fire.
+   * The label belongs to this widget/event, not its
+   * current Multiview layout slot.
    */
   const eventLabel =
     eventData?.short_name ||
@@ -122,13 +120,13 @@ export default function GamedayWidget({
       return;
     }
 
-    buildStreams(eventData.webcasts).then(
-      (streams) => {
-        if (!cancelled) {
-          setStreamsRaw(streams);
-        }
+    buildStreams(
+      eventData.webcasts
+    ).then((streams) => {
+      if (!cancelled) {
+        setStreamsRaw(streams);
       }
-    );
+    });
 
     return () => {
       cancelled = true;
@@ -170,32 +168,60 @@ export default function GamedayWidget({
     ? trackedMatches
     : matches;
 
+  /*
+   * Match imminence is only meaningful in team mode.
+   *
+   * GamedayWidget reports the signal; Multiview decides
+   * what to do with it.
+   */
+  useMatchImminence(
+    teamMode
+      ? trackedNextMatch
+      : null,
+    (signal) => {
+      if (
+        signal?.type ===
+        "match_imminent"
+      ) {
+        onMatchImminent?.(signal);
+      }
+    }
+  );
+
   const teamCount = useMemo(
     () =>
       Math.max(
         teams.length,
-        Object.keys(teamsStatuses).length
+        Object.keys(
+          teamsStatuses
+        ).length
       ),
-    [teams, teamsStatuses]
+    [
+      teams,
+      teamsStatuses,
+    ]
   );
 
   const trackerPosition =
-    multiview.teamTracker ?? "sides";
+    multiview.teamTracker ??
+    "sides";
 
-  const refreshLiveData = useCallback(() => {
-    void reloadMatches();
-    void reloadAlliances();
-    void reloadStatuses();
-  }, [
-    reloadMatches,
-    reloadAlliances,
-    reloadStatuses,
-  ]);
+  const refreshLiveData =
+    useCallback(() => {
+      void reloadMatches();
+      void reloadAlliances();
+      void reloadStatuses();
+    }, [
+      reloadMatches,
+      reloadAlliances,
+      reloadStatuses,
+    ]);
 
   useEffect(() => {
     const handler = (event) => {
       if (
-        event.key.toLowerCase() !== "r"
+        event.key.toLowerCase() !==
+        "r"
       ) {
         return;
       }
@@ -204,7 +230,11 @@ export default function GamedayWidget({
         document.activeElement;
 
       if (
-        ["INPUT", "TEXTAREA", "SELECT"].includes(
+        [
+          "INPUT",
+          "TEXTAREA",
+          "SELECT",
+        ].includes(
           element?.tagName || ""
         )
       ) {
@@ -229,12 +259,17 @@ export default function GamedayWidget({
 
   const toggleTeam = useCallback(
     (team) =>
-      setTrackedTeams((current) =>
-        current.includes(team)
-          ? current.filter(
-              (value) => value !== team
-            )
-          : [...current, team]
+      setTrackedTeams(
+        (current) =>
+          current.includes(team)
+            ? current.filter(
+                (value) =>
+                  value !== team
+              )
+            : [
+                ...current,
+                team,
+              ]
       ),
     []
   );
@@ -268,14 +303,29 @@ export default function GamedayWidget({
       {trackedTeams.length > 0 && (
         <TeamTracker
           teams={trackedTeams}
-          teamsStatuses={teamsStatuses}
+          teamsStatuses={
+            teamsStatuses
+          }
           teamCount={teamCount}
-          nextMatches={trackedNextMatches}
-          position={trackerPosition}
+          nextMatches={
+            trackedNextMatches
+          }
+          position={
+            trackerPosition
+          }
         />
       )}
 
       <div className="absolute left-2 top-2 z-50">
+        {process.env.NODE_ENV === "development" && onMatchImminent && (
+          <button
+            type="button"
+            onClick={onMatchImminent}
+            className="bottom-2 left-2 z-[9999] rounded bg-red-600 px-3 py-1 text-xs font-bold"
+          >
+            TEST IMMINENT
+          </button>
+        )}
         <button
           type="button"
           aria-label="Settings"
@@ -286,7 +336,9 @@ export default function GamedayWidget({
             )
           }
           className={`icon-button rounded-md border border-white/10 bg-neutral-950/85 shadow-lg backdrop-blur ${
-            settingsOpen ? "active" : ""
+            settingsOpen
+              ? "active"
+              : ""
           }`}
         >
           <Cog6ToothIcon />
@@ -296,7 +348,9 @@ export default function GamedayWidget({
           <div className="absolute left-0 top-full mt-1 flex flex-col gap-1 rounded-lg border border-neutral-700 bg-neutral-900 p-1 shadow-xl">
             <button
               className={`icon-button ${
-                statsOpen ? "active" : ""
+                statsOpen
+                  ? "active"
+                  : ""
               }`}
               title="Event rankings"
               onClick={() =>
@@ -334,7 +388,9 @@ export default function GamedayWidget({
 
             <button
               className={`icon-button ${
-                chatOpen ? "active" : ""
+                chatOpen
+                  ? "active"
+                  : ""
               }`}
               title="Open chat"
               onClick={() =>
@@ -349,7 +405,9 @@ export default function GamedayWidget({
             <button
               className="icon-button"
               title="Refresh live data"
-              onClick={refreshLiveData}
+              onClick={
+                refreshLiveData
+              }
             >
               <ArrowPathIcon />
             </button>
@@ -392,7 +450,9 @@ export default function GamedayWidget({
             eventData.short_name ||
             eventData.name
           }
-          isDivisional={isDivisional}
+          isDivisional={
+            isDivisional
+          }
           multiview={multiview}
         />
       </footer>
@@ -400,8 +460,12 @@ export default function GamedayWidget({
       {statsOpen && (
         <aside className="absolute inset-y-0 right-0 z-30 w-[min(360px,92vw)] border-l border-white/10 bg-neutral-950 shadow-2xl">
           <EventStatsSideBar
-            teamStatuses={teamsStatuses}
-            playoffAlliances={alliances}
+            teamStatuses={
+              teamsStatuses
+            }
+            playoffAlliances={
+              alliances
+            }
           />
         </aside>
       )}
@@ -447,8 +511,12 @@ export default function GamedayWidget({
           setTeamsOpen(false)
         }
         teams={teams}
-        teamsStatuses={teamsStatuses}
-        trackedTeams={trackedTeams}
+        teamsStatuses={
+          teamsStatuses
+        }
+        trackedTeams={
+          trackedTeams
+        }
         onToggle={toggleTeam}
       />
     </section>

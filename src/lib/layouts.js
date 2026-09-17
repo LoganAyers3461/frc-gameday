@@ -114,6 +114,27 @@ export const LAYOUTS = {
     ],
   },
 
+  onePlusFive: {
+    name: "1 + 5",
+
+    presentation: {
+      matchInfo: HIDDEN,
+      teamTracker: BOTTOM,
+    },
+
+    slots: [
+      { x: 0, y: 0, w: 70, h: 100 },
+
+      { x: 70, y: 0, w: 30, h: 33.33 },
+
+      { x: 85, y: 33.33, w: 15, h: 33.33 },
+      { x: 70, y: 33.33, w: 15, h: 33.33 },
+
+      { x: 85, y: 66.66, w: 15, h: 33.33 },
+      { x: 70, y: 66.66, w: 15, h: 33.33 },
+    ],
+  },
+
   onePlusSix: {
     name: "1 + 6",
 
@@ -252,9 +273,33 @@ export function pickLayout(count) {
   if (count === 2) return "verticalSplit";
   if (count === 3) return "onePlusTwo";
   if (count === 4) return "quad";
-  if (count === 5) return "twoPlusThree";
-  if (count === 6) return "hex";
+  if (count <= 6) return "hex";
   if (count === 7) return "onePlusSix";
   if (count === 8) return "octo";
   return "nineGrid";
+}
+
+/*
+ * Select the layout used when one event is highlighted.
+ *
+ * `count` is the number of slots currently on screen,
+ * rather than the number of occupied streams.
+ */
+export function pickHighlightLayout(count) {
+  if (count <= 1) return "single";
+
+  if (count === 2) return "verticalSplit";
+
+  if (count === 3) return "onePlusTwo";
+
+  if (count === 4) return "onePlusThree";
+
+  if (count === 6) return "onePlusFive"
+  if (count === 7) return "onePlusSix"
+
+  if (count < 7) return "twoPlusThree";
+
+  if (count <= 8) return "twoPlusSix";
+
+  return "onePlusEight";
 }
