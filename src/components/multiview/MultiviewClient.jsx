@@ -154,12 +154,6 @@ export default function MultiviewClient({
     LAYOUTS[selectedLayoutKey] ??
     LAYOUTS.single;
 
-  const presentation =
-    layout.presentation ?? {
-      teamTracker: "sides",
-      matchInfo: "full",
-    };
-
   /*
    * Promote activeKey to slot zero without changing
    * priority itself.
@@ -657,65 +651,100 @@ export default function MultiviewClient({
     <div className="flex h-screen w-screen overflow-hidden bg-black text-white">
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-10 shrink-0 items-center justify-between border-b border-neutral-800 px-2">
-  <div className="flex min-w-0 items-center gap-2">
-    <button
-      onClick={() => router.push("/")}
-      className="icon-button"
-      title="Home"
-    >
-      <HomeIcon />
-    </button>
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              onClick={() =>
+                router.push("/")
+              }
+              className="icon-button"
+              title="Home"
+            >
+              <HomeIcon />
+            </button>
 
-    {isDivisional && parentEvent ? (
-      <div className="min-w-0">
-        <div className="truncate text-sm font-bold">
-          {parentEvent.name}
-        </div>
+            {isDivisional &&
+            parentEvent ? (
+              <div className="min-w-0">
+                <div className="truncate text-sm font-bold">
+                  {parentEvent.name}
+                </div>
 
-        <div className="text-[10px] text-neutral-500">
-          <EventLocalTime timezone={parentEvent.timezone} />
-        </div>
-      </div>
-    ) : (
-      <div>
-        <div className="text-sm font-bold">
-          FieldView
-        </div>
+                <div className="text-[10px] text-neutral-500">
+                  <EventLocalTime
+                    timezone={
+                      parentEvent.timezone
+                    }
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="text-sm font-bold">
+                  FieldView
+                </div>
 
-        <div className="text-[10px] text-neutral-500">
-          Powered by The Blue Alliance
-        </div>
-      </div>
-    )}
-  </div>
+                <div className="text-[10px] text-neutral-500">
+                  Powered by The Blue Alliance
+                </div>
+              </div>
+            )}
+          </div>
 
-  <div className="flex min-w-0 gap-1 overflow-hidden">
-    {streams.map((eventKey, index) => (
-      <button
-        key={eventKey}
-        onClick={() => toggleActive(eventKey)}
-        className={`max-w-48 truncate rounded px-2 py-1 text-xs ${
-          activeKey === eventKey
-            ? "ring-2 ring-white"
-            : "bg-neutral-800"
-        }`}
-      >
-        {(labels[eventKey] ?? `Stream ${index + 1}`).replace(
-          "- FIRST Robotics Competition",
-          ""
-        )}
-      </button>
-    ))}
-  </div>
+          {/*
+           * Labels belong to widgets, not slots.
+           *
+           * Keep this mapped over `streams`.
+           */
+          }
+          <div className="flex min-w-0 gap-1 overflow-hidden">
+            {streams.map(
+              (
+                eventKey,
+                index
+              ) => (
+                <button
+                  key={eventKey}
+                  onClick={() =>
+                    toggleActive(
+                      eventKey
+                    )
+                  }
+                  className={`max-w-48 truncate rounded px-2 py-1 text-xs ${
+                    activeKey ===
+                    eventKey
+                      ? "ring-2 ring-white"
+                      : "bg-neutral-800"
+                  }`}
+                >
+                  {(
+                    labels[
+                      eventKey
+                    ] ??
+                    `Stream ${
+                      index + 1
+                    }`
+                  ).replace(
+                    "- FIRST Robotics Competition",
+                    ""
+                  )}
+                </button>
+              )
+            )}
+          </div>
 
-  <button
-    onClick={() => setSidebarOpen((value) => !value)}
-    className="icon-button"
-    title="Multiview settings"
-  >
-    <Squares2X2Icon />
-  </button>
-</header>
+          <button
+            onClick={() =>
+              setSidebarOpen(
+                (value) =>
+                  !value
+              )
+            }
+            className="icon-button"
+            title="Multiview settings"
+          >
+            <Squares2X2Icon />
+          </button>
+        </header>
 
         <main className="relative min-h-0 flex-1">
           {/*
@@ -736,6 +765,12 @@ export default function MultiviewClient({
                 layout.slots[
                   slotIndex
                 ];
+
+              const slotPresentation =
+                geometry?.presentation ?? {
+                  teamTracker: "sides",
+                  matchInfo: "visible",
+                };
 
               const visible =
                 Boolean(
@@ -789,7 +824,8 @@ export default function MultiviewClient({
                     multiview={{
                       layoutKey:
                         selectedLayoutKey,
-                      ...presentation,
+                      presentation:
+                        slotPresentation,
                       slotIndex,
                       visible,
                     }}

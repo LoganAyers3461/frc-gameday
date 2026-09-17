@@ -32,8 +32,11 @@ export default function MatchStrip({
     cards.push(match);
   }
 
+  const presentation =
+    multiview?.presentation ?? {};
+
   const hideMatchCards =
-    multiview?.matchInfo === "hidden";
+    presentation.matchInfo === "hidden";
 
   return (
     <div className="relative border-t border-l border-white/10 bg-neutral-950/95">
@@ -42,7 +45,9 @@ export default function MatchStrip({
           <div className="rounded-t-lg border-x border-t border-white/10 bg-neutral-950 px-2 py-0 shadow-lg">
             <div
               className={`flex flex-col whitespace-nowrap leading-none ${
-                hideMatchCards ? "translate-y-[-1px] py-1" : "translate-y-[5px]"
+                hideMatchCards
+                  ? "translate-y-[-1px] py-1"
+                  : "translate-y-[5px]"
               }`}
             >
               <span className="truncate text-[11px] font-bold text-white">

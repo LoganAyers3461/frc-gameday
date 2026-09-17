@@ -33,6 +33,11 @@ import { useMatchImminence } from "../multiview/hooks/useMatchImminence";
 
 const EMPTY_TEAMS = [];
 
+const DEFAULT_PRESENTATION = {
+  teamTracker: "sides",
+  matchInfo: "visible",
+};
+
 export default function GamedayWidget({
   event,
   initialTeams = EMPTY_TEAMS,
@@ -87,20 +92,10 @@ export default function GamedayWidget({
   const [chatOpen, setChatOpen] =
     useState(false);
 
-  /*
-   * `initialTeams` is an actual prop for direct
-   * GamedayWidget callers.
-   *
-   * The module-scoped default keeps omitted props stable.
-   */
   useEffect(() => {
     setTrackedTeams(initialTeams);
   }, [initialTeams]);
 
-  /*
-   * The label belongs to this widget/event, not its
-   * current Multiview layout slot.
-   */
   const eventLabel =
     eventData?.short_name ||
     eventData?.name ||
@@ -168,12 +163,6 @@ export default function GamedayWidget({
     ? trackedMatches
     : matches;
 
-  /*
-   * Match imminence is only meaningful in team mode.
-   *
-   * GamedayWidget reports the signal; Multiview decides
-   * what to do with it.
-   */
   useMatchImminence(
     teamMode
       ? trackedNextMatch
@@ -202,9 +191,13 @@ export default function GamedayWidget({
     ]
   );
 
+  const slotPresentation =
+    multiview.presentation ??
+    DEFAULT_PRESENTATION;
+
   const trackerPosition =
-    multiview.teamTracker ??
-    "sides";
+    slotPresentation.teamTracker ??
+    DEFAULT_PRESENTATION.teamTracker;
 
   const refreshLiveData =
     useCallback(() => {
@@ -317,15 +310,17 @@ export default function GamedayWidget({
       )}
 
       <div className="absolute left-2 top-2 z-50">
-        {process.env.NODE_ENV === "development" && onMatchImminent && (
-          <button
-            type="button"
-            onClick={onMatchImminent}
-            className="bottom-2 left-2 z-[9999] rounded bg-red-600 px-3 py-1 text-xs font-bold"
-          >
-            TEST IMMINENT
-          </button>
-        )}
+        {process.env.NODE_ENV === "development" &&
+          onMatchImminent && (
+            <button
+              type="button"
+              onClick={onMatchImminent}
+              className="bottom-2 left-2 z-[9999] rounded bg-red-600 px-3 py-1 text-xs font-bold"
+            >
+              TEST IMMINENT
+            </button>
+          )}
+
         <button
           type="button"
           aria-label="Settings"
@@ -446,6 +441,7 @@ export default function GamedayWidget({
             eventData.timezone
           }
           playoffAlliances={alliances}
+          playoffType={eventData.playoff_type}
           eventName={
             eventData.short_name ||
             eventData.name
@@ -453,7 +449,10 @@ export default function GamedayWidget({
           isDivisional={
             isDivisional
           }
-          multiview={multiview}
+          multiview={{
+            presentation:
+              slotPresentation,
+          }}
         />
       </footer>
 

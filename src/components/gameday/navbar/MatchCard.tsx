@@ -41,6 +41,7 @@ function compactMatchName(
     case "sf":
       switch (playoffType) {
         case 10:
+            return `Playoff ${set ?? number}`;
         case 11:
           return `Playoff ${set ?? number}`;
 
