@@ -410,27 +410,56 @@ export default function GamedayWidget({
         )}
       </div>
 
-      <div className="relative min-h-0 flex-1">
-        <StreamView
-          stream={activeStream}
-        />
+      <div className="relative min-h-0 flex-1 flex overflow-hidden">
+        {statsOpen && (
+          <aside className="h-full w-[min(250px,92vw)] shrink-0 border-r border-white/10 bg-neutral-950 shadow-2xl">
+            <EventStatsSideBar
+              teamStatuses={teamsStatuses}
+              playoffAlliances={alliances}
+            />
+          </aside>
+        )}
 
-        {!activeStream && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="rounded-xl border border-white/10 bg-neutral-950/90 px-5 py-4 text-center">
-              <div className="font-semibold text-white">
-                No webcast available
-              </div>
+        <div className="relative min-w-0 min-h-0 flex-1">
+          <StreamView stream={activeStream} />
 
-              <div className="mt-1 text-xs text-neutral-500">
-                This event has not published a
-                supported live stream.
+          {!activeStream && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="rounded-xl border border-white/10 bg-neutral-950/90 px-5 py-4 text-center">
+                <div className="font-semibold text-white">
+                  No webcast available
+                </div>
+
+                <div className="mt-1 text-xs text-neutral-500">
+                  This event has not published a
+                  supported live stream.
+                </div>
               </div>
             </div>
-          </div>
+          )}
+        </div>
+
+        {chatOpen && (
+          <aside className="h-full w-[min(420px,92vw)] shrink-0 border-l border-white/10 bg-black shadow-2xl">
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 text-xs font-semibold">
+                <span>Live chat</span>
+
+                <button
+                  onClick={() => setChatOpen(false)}
+                  className="text-neutral-500"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="min-h-0 flex-1">
+                <ChatView stream={activeStream} />
+              </div>
+            </div>
+          </aside>
         )}
       </div>
-
       <footer className="relative z-20 shrink-0">
         <MatchStrip
           matches={displayMatches}
@@ -455,44 +484,6 @@ export default function GamedayWidget({
           }}
         />
       </footer>
-
-      {statsOpen && (
-        <aside className="absolute inset-y-0 right-0 z-30 w-[min(360px,92vw)] border-l border-white/10 bg-neutral-950 shadow-2xl">
-          <EventStatsSideBar
-            teamStatuses={
-              teamsStatuses
-            }
-            playoffAlliances={
-              alliances
-            }
-          />
-        </aside>
-      )}
-
-      {chatOpen && (
-        <aside className="absolute inset-y-0 right-0 z-30 w-[min(420px,92vw)] border-l border-white/10 bg-black shadow-2xl">
-          <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 text-xs font-semibold">
-              Live chat
-
-              <button
-                onClick={() =>
-                  setChatOpen(false)
-                }
-                className="text-neutral-500"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1">
-              <ChatView
-                stream={activeStream}
-              />
-            </div>
-          </div>
-        </aside>
-      )}
 
       <StreamModal
         open={streamsOpen}
