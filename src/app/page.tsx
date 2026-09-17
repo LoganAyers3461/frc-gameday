@@ -332,7 +332,7 @@ function EventCard({
 
       <div className="mt-4 flex gap-2">
         <button
-          onClick={() => router.push(`/gameday/${event.key}`)}
+          onClick={() => router.push(`/gameday?event=${event.key}`)}
           className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-white px-3 py-2 text-xs font-bold text-black hover:bg-neutral-200"
         >
           Watch

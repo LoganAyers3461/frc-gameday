@@ -2,30 +2,72 @@
 
 import { useEffect, useState } from "react";
 import MultiviewClient from "@/components/multiview/MultiviewClient";
-import GamedayWidget from "@/components/gameday/GamedayWidget";
 
 export const dynamic = "force-dynamic";
-export default function DivisionalEvent({ params, searchParams }) {
+
+export default function DivisionalEvent({ params }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([params, searchParams]).then(async ([p, sp]) => {
-      const key = p.parentEvent;
-      const res = await fetch(`/api/event/${key}`, { cache: "no-store" });
-      if (!res.ok) throw new Error();
-      const parent = await res.json();
-      const teams = Array.isArray(sp?.team) ? sp.team : sp?.team ? [sp.team] : [];
-      if (!cancelled) setData({ parent, teams });
-    }).catch(() => !cancelled && setError(true));
-    return () => { cancelled = true; };
-  }, [params, searchParams]);
 
-  if (error) return <div className="flex h-screen items-center justify-center bg-black text-sm text-neutral-500">Championship event not found.</div>;
-  if (!data) return <div className="flex h-screen items-center justify-center bg-black text-sm text-neutral-500">Loading championship…</div>;
+    Promise.resolve(params)
+      .then(async (p) => {
+        const key = p.parentEvent;
 
-  const divisions = data.parent?.division_keys || [];
-  const events = [...divisions, data.parent.key];
-  return <MultiviewClient isDivisional parentEvent={data.parent}>{events.map((key) => <GamedayWidget key={key} event={key} initialTeams={data.teams} isDivisional />)}</MultiviewClient>;
+        const res = await fetch(`/api/event/${key}`, {
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error();
+        }
+
+        return res.json();
+      })
+      .then((parent) => {
+        if (!cancelled) {
+          setData(parent);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params]);
+
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-black text-sm text-neutral-500">
+        Championship event not found.
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-black text-sm text-neutral-500">
+        Loading championship…
+      </div>
+    );
+  }
+
+  const events = [
+    ...(data.division_keys || []),
+    data.key,
+  ];
+
+  return (
+    <MultiviewClient
+      events={events}
+      isDivisional
+      parentEvent={data}
+    />
+  );
 }
