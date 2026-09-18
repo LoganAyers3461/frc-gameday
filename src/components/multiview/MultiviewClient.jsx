@@ -1010,7 +1010,27 @@ export default function MultiviewClient({
         <div className="mb-1 font-bold">
           Layouts
         </div>
-
+        <button
+          onClick={() => {
+            setLayoutKey(null);
+            setHighlightLayoutKey(
+              null
+            );
+          }}
+          className={`mt-2 block w-full rounded px-2 py-1 text-left text-sm ${
+            layoutKey === null
+              ? "bg-green-700"
+              : "hover:bg-neutral-800"
+          }`}
+        >
+          Auto Layout (
+          {
+            LAYOUTS[
+              autoLayoutKey
+            ].name
+          }
+          )
+        </button>
         {Object.entries(
           LAYOUTS
         ).map(
@@ -1042,28 +1062,6 @@ export default function MultiviewClient({
             </button>
           )
         )}
-
-        <button
-          onClick={() => {
-            setLayoutKey(null);
-            setHighlightLayoutKey(
-              null
-            );
-          }}
-          className={`mt-2 block w-full rounded px-2 py-1 text-left text-sm ${
-            layoutKey === null
-              ? "bg-green-700"
-              : "hover:bg-neutral-800"
-          }`}
-        >
-          Auto Layout (
-          {
-            LAYOUTS[
-              autoLayoutKey
-            ].name
-          }
-          )
-        </button>
       </aside>
 
       {eventPickerOpen && (
