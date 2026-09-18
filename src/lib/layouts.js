@@ -233,7 +233,8 @@ export function pickLayout(count) {
   if (count === 2) return "verticalSplit";
   if (count === 3) return "onePlusTwo";
   if (count === 4) return "quad";
-  if (count <= 6) return "hex";
+  if (count === 5) return "twoPlusThree";
+  if (count === 6) return "hex";
   if (count === 7) return "onePlusSix";
   if (count === 8) return "octo";
   return "nineGrid";
@@ -250,9 +251,10 @@ export function pickHighlightLayout(count) {
   if (count === 2) return "verticalSplit";
   if (count === 3) return "onePlusTwo";
   if (count === 4) return "onePlusThree";
+  if (count === 5) return "twoPlusThree";
   if (count === 6) return "onePlusFive";
   if (count === 7) return "onePlusSix";
-  if (count < 7) return "twoPlusThree";
-  if (count <= 8) return "twoPlusSix";
+  if (count === 8) return "twoPlusThree";
+  if (count === 9) return "onePlusEight";
   return "onePlusEight";
 }
