@@ -223,20 +223,42 @@ export default function GamedayWidget({
   } = useWebSocket(
     event,
     (message) => {
-      if (
-        message.type !==
-        "tba-update"
-      ) {
+      if (message.type !== "tba-update") {
         return;
       }
 
-      if (
-        message.eventKey !== event
-      ) {
+      if (message.eventKey !== event) {
         return;
       }
-      console.log(`[WSS] Recieved ${message.messageType} for event ${message.eventKey}`)
-      refreshLiveData();
+
+      console.log(
+        `[WSS] Received ${message.messageType} for event ${message.eventKey}`,
+      );
+
+      switch (message.messageType) {
+        case "upcoming_match":
+        case "match_score":
+        case "match_video":
+        case "starting_comp_level":
+        case "schedule_updated":
+          console.log("[WSS] Reloading Matches and Team Statuses...")
+          void reloadMatches();
+          void reloadStatuses();
+          break;
+
+        case "alliance_selection":
+          console.log("[WSS] Reloading Playoff Alliances and Team Statuses...")
+          void reloadAlliances();
+          void reloadStatuses();
+          break;
+
+        default:
+          console.log(
+            `[WSS] Unknown message type "${message.messageType}", refreshing all data sources`,
+          );
+          refreshLiveData();
+          break;
+      }
     },
   );
 
