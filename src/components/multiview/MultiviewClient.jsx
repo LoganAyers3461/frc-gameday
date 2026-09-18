@@ -512,6 +512,41 @@ export default function MultiviewClient({
         return;
       }
 
+      if (event.key === "-" || event.key === "=") {
+        const layoutKeys = Object.keys(LAYOUTS);
+
+        const currentKey =
+          layoutKey ?? autoLayoutKey;
+
+        const currentIndex =
+          layoutKeys.indexOf(currentKey);
+
+        const direction =
+          event.key === "-" ? -1 : 1;
+
+        const nextIndex =
+          currentIndex + direction;
+
+        if (
+          nextIndex < 0 ||
+          nextIndex >= layoutKeys.length
+        ) {
+          return;
+        }
+
+        const nextKey =
+          layoutKeys[nextIndex];
+
+        console.log(
+          "Setting Layout Key to",
+          nextKey
+        );
+
+        setLayoutKey(nextKey);
+        setHighlightLayoutKey(null);
+        return;
+      }
+      
       if (event.key === "ArrowUp" && priorityEditKey) {
         console.log("Moving", priorityEditKey, "Up")
         movePriorityEdit(-1);
@@ -533,6 +568,7 @@ export default function MultiviewClient({
     streams,
     activeKey,
     priorityEditKey,
+    layoutKey,
     layout.slots.length,
     movePriorityEdit,
   ]);
