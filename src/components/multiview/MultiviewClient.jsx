@@ -272,6 +272,38 @@ export default function MultiviewClient({
     []
   );
 
+  const moveActive = useCallback(
+  (direction) => {
+    if (!activeKey) {
+      return;
+    }
+
+    setPriority((current) => {
+      const position = current.indexOf(activeKey);
+
+      if (position === -1) {
+        return current;
+      }
+
+      const target = position + direction;
+
+      if (target < 0 || target >= current.length) {
+        return current;
+      }
+
+      const next = [...current];
+
+      [next[position], next[target]] = [
+        next[target],
+        next[position],
+      ];
+
+      return next;
+    });
+  },
+  [activeKey]
+);
+
   /*
    * Update only the event portion of the URL.
    */
@@ -414,6 +446,81 @@ export default function MultiviewClient({
       layout.slots.length,
     ]
   );
+
+  /*
+  * Keyboard controls.
+  *
+  * 1-9 select the corresponding stream by stable stream order.
+  * 0 clears the active highlight.
+  *
+  * Once a stream is selected:
+  *   ArrowUp   moves it earlier in priority.
+  *   ArrowDown moves it later in priority.
+  *
+  * Priority is deliberately changed underneath the highlight.
+  * Clearing the highlight then reveals the new priority order.
+  */
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      const target = event.target;
+
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target instanceof HTMLButtonElement ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
+      if (event.key >= "1" && event.key <= "9") {
+        const index = Number(event.key) - 1;
+        const eventKey = streams[index];
+
+        if (!eventKey) {
+          return;
+        }
+
+        event.preventDefault();
+
+        toggleActive(eventKey);
+
+        return;
+      }
+
+      if (event.key === "0") {
+        event.preventDefault();
+
+        setActiveKey(null);
+        setHighlightLayoutKey(null);
+
+        return;
+      }
+
+      if (event.key === "ArrowUp" && activeKey) {
+        event.preventDefault();
+        moveActive(-1);
+        return;
+      }
+
+      if (event.key === "ArrowDown" && activeKey) {
+        event.preventDefault();
+        moveActive(1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    streams,
+    activeKey,
+    layout.slots.length,
+    moveActive,
+  ]);
 
   /*
    * Fetch active events only when the picker is opened.
