@@ -12,6 +12,7 @@ export default function MatchStrip({
   playoffAlliances = [],
   playoffType = null,
   eventName,
+  wssConnected = false,
   showEventInfo = true,
   isDivisional = false,
   multiview = {},
@@ -24,7 +25,10 @@ export default function MatchStrip({
     nextMatch,
     ...matches,
   ]) {
-    if (!match?.key || seen.has(match.key)) {
+    if (
+      !match?.key ||
+      seen.has(match.key)
+    ) {
       continue;
     }
 
@@ -36,7 +40,8 @@ export default function MatchStrip({
     multiview?.presentation ?? {};
 
   const hideMatchCards =
-    presentation.matchInfo === "hidden";
+    presentation.matchInfo ===
+    "hidden";
 
   return (
     <div className="relative border-t border-l border-white/10 bg-neutral-950/95">
@@ -50,15 +55,35 @@ export default function MatchStrip({
                   : "translate-y-[5px]"
               }`}
             >
-              <span className="truncate text-[11px] font-bold text-white">
-                {eventName || "Event"}
+              <span className="flex items-center gap-1.5 truncate text-[11px] font-bold text-white">
+                <span className="truncate">
+                  {eventName || "Event"}
+                </span>
+
+                <span
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                    wssConnected
+                      ? "bg-green-500"
+                      : "bg-neutral-600"
+                  }`}
+                  title={
+                    wssConnected
+                      ? "Live updates connected"
+                      : "Live updates disconnected"
+                  }
+                />
               </span>
 
-              {eventTimezone && !isDivisional && (
-                <span className="mt-0.5 text-[9px] text-neutral-500">
-                  <EventLocalTime timezone={eventTimezone} />
-                </span>
-              )}
+              {eventTimezone &&
+                !isDivisional && (
+                  <span className="mt-0.5 text-[9px] text-neutral-500">
+                    <EventLocalTime
+                      timezone={
+                        eventTimezone
+                      }
+                    />
+                  </span>
+                )}
             </div>
           </div>
         </div>
@@ -73,11 +98,23 @@ export default function MatchStrip({
                   key={match.key}
                   match={match}
                   team={team}
-                  isNext={match.key === nextMatch?.key}
-                  isLast={match.key === lastMatch?.key}
-                  playoffAlliances={playoffAlliances}
-                  playoffType={playoffType}
-                  eventTimezone={eventTimezone}
+                  isNext={
+                    match.key ===
+                    nextMatch?.key
+                  }
+                  isLast={
+                    match.key ===
+                    lastMatch?.key
+                  }
+                  playoffAlliances={
+                    playoffAlliances
+                  }
+                  playoffType={
+                    playoffType
+                  }
+                  eventTimezone={
+                    eventTimezone
+                  }
                 />
               ))}
             </div>

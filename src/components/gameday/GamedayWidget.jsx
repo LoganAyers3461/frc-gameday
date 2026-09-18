@@ -29,6 +29,7 @@ import { usePlayoffAlliances } from "./hooks/usePlayoffAlliances";
 import { useMatches } from "./hooks/useMatches";
 import { useTrackedMatches } from "./hooks/useTrackedMatches";
 import { useStreamController } from "./hooks/useStreamController";
+import { useWebSocket } from "./hooks/useWebSocket";
 import { useMatchImminence } from "../multiview/hooks/useMatchImminence";
 
 const EMPTY_TEAMS = [];
@@ -105,7 +106,7 @@ export default function GamedayWidget({
     if (eventLabel) {
       registerLabel?.(eventLabel);
     }
-  }, [eventLabel]);
+  }, [eventLabel, registerLabel]);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,7 +117,7 @@ export default function GamedayWidget({
     }
 
     buildStreams(
-      eventData.webcasts
+      eventData.webcasts,
     ).then((streams) => {
       if (!cancelled) {
         setStreamsRaw(streams);
@@ -135,7 +136,7 @@ export default function GamedayWidget({
     setActiveKey,
   } = useStreamController(
     streamsRaw,
-    eventData?.timezone
+    eventData?.timezone,
   );
 
   const {
@@ -145,7 +146,7 @@ export default function GamedayWidget({
     trackedNextMatches,
   } = useTrackedMatches(
     matches,
-    trackedTeams
+    trackedTeams,
   );
 
   const teamMode =
@@ -174,7 +175,7 @@ export default function GamedayWidget({
       ) {
         onMatchImminent?.(signal);
       }
-    }
+    },
   );
 
   const teamCount = useMemo(
@@ -182,13 +183,13 @@ export default function GamedayWidget({
       Math.max(
         teams.length,
         Object.keys(
-          teamsStatuses
-        ).length
+          teamsStatuses,
+        ).length,
       ),
     [
       teams,
       teamsStatuses,
-    ]
+    ],
   );
 
   const slotPresentation =
@@ -210,6 +211,34 @@ export default function GamedayWidget({
       reloadStatuses,
     ]);
 
+  /*
+   * WebSocket notifications are invalidation
+   * signals. The socket is scoped to this event,
+   * so a received event means the existing TBA
+   * data sources should be refreshed.
+   */
+  const {
+    connected: wssConnected,
+  } = useWebSocket(
+    event,
+    (message) => {
+      if (
+        message.type !==
+        "tba-update"
+      ) {
+        return;
+      }
+
+      if (
+        message.eventKey !== event
+      ) {
+        return;
+      }
+
+      refreshLiveData();
+    },
+  );
+
   useEffect(() => {
     const handler = (event) => {
       if (
@@ -228,7 +257,7 @@ export default function GamedayWidget({
           "TEXTAREA",
           "SELECT",
         ].includes(
-          element?.tagName || ""
+          element?.tagName || "",
         )
       ) {
         return;
@@ -239,13 +268,13 @@ export default function GamedayWidget({
 
     window.addEventListener(
       "keydown",
-      handler
+      handler,
     );
 
     return () => {
       window.removeEventListener(
         "keydown",
-        handler
+        handler,
       );
     };
   }, [refreshLiveData]);
@@ -257,14 +286,14 @@ export default function GamedayWidget({
           current.includes(team)
             ? current.filter(
                 (value) =>
-                  value !== team
+                  value !== team,
               )
             : [
                 ...current,
                 team,
-              ]
+              ],
       ),
-    []
+    [],
   );
 
   if (loading) {
@@ -310,11 +339,14 @@ export default function GamedayWidget({
       )}
 
       <div className="absolute left-2 top-2 z-50">
-        {process.env.NODE_ENV === "development" &&
+        {process.env.NODE_ENV ===
+          "development" &&
           onMatchImminent && (
             <button
               type="button"
-              onClick={onMatchImminent}
+              onClick={
+                onMatchImminent
+              }
               className="bottom-2 left-2 z-[9999] rounded bg-red-600 px-3 py-1 text-xs font-bold"
             >
               TEST IMMINENT
@@ -327,7 +359,7 @@ export default function GamedayWidget({
           title="Settings"
           onClick={() =>
             setSettingsOpen(
-              (value) => !value
+              (value) => !value,
             )
           }
           className={`icon-button rounded-md border border-white/10 bg-neutral-950/85 shadow-lg backdrop-blur ${
@@ -350,7 +382,7 @@ export default function GamedayWidget({
               title="Event rankings"
               onClick={() =>
                 setStatsOpen(
-                  (value) => !value
+                  (value) => !value,
                 )
               }
             >
@@ -390,7 +422,7 @@ export default function GamedayWidget({
               title="Open chat"
               onClick={() =>
                 setChatOpen(
-                  (value) => !value
+                  (value) => !value,
                 )
               }
             >
@@ -414,14 +446,20 @@ export default function GamedayWidget({
         {statsOpen && (
           <aside className="h-full w-[min(250px,92vw)] shrink-0 border-r border-white/10 bg-neutral-950 shadow-2xl">
             <EventStatsSideBar
-              teamStatuses={teamsStatuses}
-              playoffAlliances={alliances}
+              teamStatuses={
+                teamsStatuses
+              }
+              playoffAlliances={
+                alliances
+              }
             />
           </aside>
         )}
 
         <div className="relative min-w-0 min-h-0 flex-1">
-          <StreamView stream={activeStream} />
+          <StreamView
+            stream={activeStream}
+          />
 
           {!activeStream && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -443,10 +481,14 @@ export default function GamedayWidget({
           <aside className="h-full w-[min(420px,92vw)] shrink-0 border-l border-white/10 bg-black shadow-2xl">
             <div className="flex h-full flex-col">
               <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 text-xs font-semibold">
-                <span>Live chat</span>
+                <span>
+                  Live chat
+                </span>
 
                 <button
-                  onClick={() => setChatOpen(false)}
+                  onClick={() =>
+                    setChatOpen(false)
+                  }
                   className="text-neutral-500"
                 >
                   Close
@@ -454,12 +496,15 @@ export default function GamedayWidget({
               </div>
 
               <div className="min-h-0 flex-1">
-                <ChatView stream={activeStream} />
+                <ChatView
+                  stream={activeStream}
+                />
               </div>
             </div>
           </aside>
         )}
       </div>
+
       <footer className="relative z-20 shrink-0">
         <MatchStrip
           matches={displayMatches}
@@ -469,11 +514,18 @@ export default function GamedayWidget({
           eventTimezone={
             eventData.timezone
           }
-          playoffAlliances={alliances}
-          playoffType={eventData.playoff_type}
+          playoffAlliances={
+            alliances
+          }
+          playoffType={
+            eventData.playoff_type
+          }
           eventName={
             eventData.short_name ||
             eventData.name
+          }
+          wssConnected={
+            wssConnected
           }
           isDivisional={
             isDivisional
