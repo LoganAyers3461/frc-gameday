@@ -234,7 +234,7 @@ export default function GamedayWidget({
       ) {
         return;
       }
-
+      console.log(`[WSS] Recieved ${message.type} for event ${message.eventKey}`)
       refreshLiveData();
     },
   );
