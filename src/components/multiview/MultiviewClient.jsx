@@ -272,38 +272,6 @@ export default function MultiviewClient({
     []
   );
 
-  const moveActive = useCallback(
-  (direction) => {
-    if (!activeKey) {
-      return;
-    }
-
-    setPriority((current) => {
-      const position = current.indexOf(activeKey);
-
-      if (position === -1) {
-        return current;
-      }
-
-      const target = position + direction;
-
-      if (target < 0 || target >= current.length) {
-        return current;
-      }
-
-      const next = [...current];
-
-      [next[position], next[target]] = [
-        next[target],
-        next[position],
-      ];
-
-      return next;
-    });
-  },
-  [activeKey]
-);
-
   /*
    * Update only the event portion of the URL.
    */
@@ -448,6 +416,46 @@ export default function MultiviewClient({
   );
 
   /*
+  * preserve eventKey from pressing ctrl+[1-9] for visual reordering without opening the side bar
+  */
+  const [
+    priorityEditKey,
+    setPriorityEditKey,
+  ] = useState(null);
+
+  const movePriorityEdit = useCallback(
+    (direction) => {
+      if (!priorityEditKey) {
+        return;
+      }
+
+      setPriority((current) => {
+        const position = current.indexOf(priorityEditKey);
+
+        if (position === -1) {
+          return current;
+        }
+
+        const target = position + direction;
+
+        if (target < 0 || target >= current.length) {
+          return current;
+        }
+
+        const next = [...current];
+
+        [next[position], next[target]] = [
+          next[target],
+          next[position],
+        ];
+
+        return next;
+      });
+    },
+    [priorityEditKey]
+  );
+
+  /*
   * Keyboard controls.
   *
   * 1-9 select the corresponding stream by stable stream order.
@@ -475,38 +483,44 @@ export default function MultiviewClient({
       }
 
       if (event.key >= "1" && event.key <= "9") {
+        event.preventDefault();
         const index = Number(event.key) - 1;
         const eventKey = streams[index];
-
+        
         if (!eventKey) {
           return;
         }
 
-        event.preventDefault();
+        if(event.ctrlKey) {
+          if (priorityEditKey === eventKey) {
+            setPriorityEditKey(null);
+            return;
+          }
+          event.preventDefault();
+          setPriorityEditKey(eventKey);
+          return;
+        }
 
         toggleActive(eventKey);
-
         return;
       }
 
       if (event.key === "0") {
-        event.preventDefault();
-
         setActiveKey(null);
         setHighlightLayoutKey(null);
 
         return;
       }
 
-      if (event.key === "ArrowUp" && activeKey) {
-        event.preventDefault();
-        moveActive(-1);
+      if (event.key === "ArrowUp" && priorityEditKey) {
+        console.log("Moving", priorityEditKey, "Up")
+        movePriorityEdit(-1);
         return;
       }
 
-      if (event.key === "ArrowDown" && activeKey) {
-        event.preventDefault();
-        moveActive(1);
+      if (event.key === "ArrowDown" && priorityEditKey) {
+        console.log("Moving", priorityEditKey, "Down")
+        movePriorityEdit(1);
       }
     };
 
@@ -518,10 +532,11 @@ export default function MultiviewClient({
   }, [
     streams,
     activeKey,
+    priorityEditKey,
     layout.slots.length,
-    moveActive,
+    movePriorityEdit,
   ]);
-
+  
   /*
    * Fetch active events only when the picker is opened.
    */
@@ -818,12 +833,20 @@ export default function MultiviewClient({
                       eventKey
                     )
                   }
-                  className={`max-w-48 truncate rounded px-2 py-1 bg-stone-800 ${
-                    activeKey ===
-                    eventKey
-                      ? "inset-ring-2 inset-ring-white"
-                      : ""
-                  }`}
+                  className={`max-w-48 truncate rounded px-2 py-1 bg-stone-800 
+                    ${
+                      priorityEditKey ===
+                      eventKey
+                        ? "inset-ring-2 inset-ring-blue-500"
+                        : ""
+                    }
+                    ${
+                      activeKey ===
+                      eventKey
+                        ? "inset-ring-2 inset-ring-white"
+                        : ""
+                    }
+                  `}
                 >
                   {(
                     labels[
