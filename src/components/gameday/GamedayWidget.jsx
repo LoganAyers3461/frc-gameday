@@ -202,6 +202,7 @@ export default function GamedayWidget({
 
   const refreshLiveData =
     useCallback(() => {
+      console.log("Refreshing all data sources...")
       void reloadMatches();
       void reloadAlliances();
       void reloadStatuses();
@@ -234,7 +235,7 @@ export default function GamedayWidget({
       ) {
         return;
       }
-      console.log(`[WSS] Recieved ${message.type} for event ${message.eventKey}`)
+      console.log(`[WSS] Recieved ${message.messageType} for event ${message.eventKey}`)
       refreshLiveData();
     },
   );
