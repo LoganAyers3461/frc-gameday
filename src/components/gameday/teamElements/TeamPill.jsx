@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { compactMatchLabel } from "@/lib/gameday/matchUtils";
+import NextMatchCountdown from "@/components/gameday/navbar/NextMatchCountdown";
 
 export default function TeamPill({
   team,
@@ -10,32 +10,11 @@ export default function TeamPill({
   nextMatch,
   presentation = "visible",
 }) {
-  const [, tick] = useState(0);
-
-  useEffect(() => {
-    if (!nextMatch?.predicted_time) {
-      return;
-    }
-
-    const id = window.setInterval(() => {
-      tick((value) => value + 1);
-    }, 1000);
-
-    return () => window.clearInterval(id);
-  }, [nextMatch?.predicted_time]);
-
   if (presentation === "hidden") {
     return null;
   }
 
   const record = status?.qual?.ranking?.record;
-
-  const countdown = nextMatch?.predicted_time
-    ? Math.max(
-        0,
-        Math.round(nextMatch.predicted_time - Date.now() / 1000)
-      )
-    : null;
 
   const teamNumber = String(team).replace(/^frc/i, "");
 
@@ -69,11 +48,9 @@ export default function TeamPill({
             {compactMatchLabel(nextMatch)}
           </span>
 
-          {countdown != null && (
+          {nextMatch.predicted_time != null && (
             <span className="font-mono text-[9px] text-neutral-400">
-              {countdown < 60
-                ? `${countdown}s`
-                : `${Math.ceil(countdown / 60)}m`}
+              <NextMatchCountdown nextMatch={nextMatch} />
             </span>
           )}
         </>

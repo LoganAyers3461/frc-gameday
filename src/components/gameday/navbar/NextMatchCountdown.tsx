@@ -24,15 +24,29 @@ export default function NextMatchCountdown({
     return null;
   }
 
+  const now = Date.now();
+  const target = nextMatch.predicted_time * 1_000;
+
   const seconds = Math.max(
     0,
-    Math.round(nextMatch.predicted_time - Date.now() / 1_000)
+    Math.round(nextMatch.predicted_time - now / 1_000)
   );
 
-  const text =
-    seconds < 60
-      ? `${seconds}s`
-      : `${Math.ceil(seconds / 60)}m`;
+  const nowDate = new Date(now);
+  const targetDate = new Date(target);
 
-  return <span className="tabular-nums">{text}</span>;
+  const sameDay =
+    nowDate.toDateString() === targetDate.toDateString();
+
+  const text = !sameDay
+    ? targetDate.toLocaleDateString("en-US", {
+        weekday: "short",
+      })
+    : seconds < 60
+      ? `${seconds}s`
+      : seconds < 3600
+        ? `${Math.ceil(seconds / 60)}m`
+        : `${Math.ceil(seconds / 3600)}h`;
+
+  return <span className="tabular-nums">~{text}</span>;
 }

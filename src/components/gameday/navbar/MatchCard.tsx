@@ -170,7 +170,7 @@ export default function MatchCard({
               : "text-transparent",
           ].join(" ")}
         >
-          {match.alliances.red.score ?? "—"}
+          {match.alliances.red.score != -1 ? match.alliances.red.score : ""}
         </div>
 
         {/* Blue alliance */}
@@ -193,7 +193,7 @@ export default function MatchCard({
               : "text-transparent",
           ].join(" ")}
         >
-          {match.alliances.blue.score ?? "—"}
+          {match.alliances.blue.score != -1 ? match.alliances.blue.score : ""}
         </div>
       </div>
     </article>
