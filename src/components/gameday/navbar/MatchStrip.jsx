@@ -14,6 +14,7 @@ export default function MatchStrip({
   playoffType = null,
   eventName,
   wssConnected = false,
+  teamPills = [],
   showEventInfo = true,
   isDivisional = false,
   multiview = {},
@@ -86,9 +87,10 @@ export default function MatchStrip({
 
   return (
     <div className="relative border-t border-l border-white/10 bg-neutral-950/95">
-      {showEventInfo && (
-        <div className="absolute bottom-full left-0 z-10 -mb-px flex max-w-[min(80vw,360px)]">
-          <div className="rounded-t-lg border-x border-t border-white/10 bg-neutral-950 px-2 py-0 shadow-lg">
+      {(showEventInfo || teamPills.length > 0) && (
+        <div className="absolute bottom-full left-0 z-10 -mb-px flex max-w-[calc(100%-0.5rem)] items-end gap-1">
+          {showEventInfo && (
+          <div className="shrink-0 rounded-t-lg border-x border-t border-white/10 bg-neutral-950 px-2 py-0 shadow-lg">
             <div
               className={`flex flex-col whitespace-nowrap leading-none ${
                 hideMatchCards
@@ -127,6 +129,14 @@ export default function MatchStrip({
                 )}
             </div>
           </div>
+          )}
+          {teamPills.length > 0 && (
+            <div className="min-w-0 max-w-[calc(100vw-2rem)] overflow-x-auto overflow-y-hidden pb-0.5 no-scrollbar">
+              <div className="flex w-max gap-1">
+                {teamPills}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
