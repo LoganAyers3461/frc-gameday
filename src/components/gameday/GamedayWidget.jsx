@@ -358,20 +358,6 @@ export default function GamedayWidget({
   return (
     <section className="relative flex h-full min-h-0 flex-col overflow-hidden bg-black">
       <div className="absolute left-2 top-2 z-50">
-        {process.env.NODE_ENV ===
-          "development" &&
-          onMatchImminent && (
-            <button
-              type="button"
-              onClick={
-                onMatchImminent
-              }
-              className="bottom-2 left-2 z-[9999] rounded bg-red-600 px-3 py-1 text-xs font-bold"
-            >
-              TEST IMMINENT
-            </button>
-          )}
-
         <button
           type="button"
           aria-label="Settings"
