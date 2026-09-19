@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import MatchCard from "./MatchCard";
 import EventLocalTime from "./EventLocalTime";
 
@@ -17,13 +18,21 @@ export default function MatchStrip({
   isDivisional = false,
   multiview = {},
 }) {
+  const scrollRef = useRef(null);
+
+  /*
+   * Keep every match in the strip while avoiding duplicate keys.
+   *
+   * lastMatch / nextMatch are included as fallbacks in case they
+   * have not yet appeared in the main match data.
+   */
   const seen = new Set();
   const cards = [];
 
   for (const match of [
+    ...matches,
     lastMatch,
     nextMatch,
-    ...matches,
   ]) {
     if (
       !match?.key ||
@@ -42,6 +51,38 @@ export default function MatchStrip({
   const hideMatchCards =
     presentation.matchInfo ===
     "hidden";
+
+  /*
+   * Automatically bring the next match into view whenever the
+   * actual next match changes.
+   *
+   * The data refreshes may cause this component to render many
+   * times, so the dependency is specifically nextMatch?.key.
+   */
+  useEffect(() => {
+    if (
+      hideMatchCards ||
+      !nextMatch?.key ||
+      !scrollRef.current
+    ) {
+      return;
+    }
+
+    const nextElement =
+      scrollRef.current.querySelector(
+        `[data-match-key="${CSS.escape(nextMatch.key)}"]`,
+      );
+
+    if (!nextElement) {
+      return;
+    }
+
+    nextElement.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [nextMatch?.key, hideMatchCards]);
 
   return (
     <div className="relative border-t border-l border-white/10 bg-neutral-950/95">
@@ -90,32 +131,40 @@ export default function MatchStrip({
       )}
 
       {!hideMatchCards && (
-        <div className="h-[52px] overflow-x-auto overflow-y-hidden no-scrollbar">
+        <div
+          ref={scrollRef}
+          className="h-[52px] overflow-x-auto overflow-y-hidden no-scrollbar"
+        >
           {cards.length > 0 ? (
             <div className="flex h-full min-w-max items-center gap-1.5 px-2">
               {cards.map((match) => (
-                <MatchCard
+                <div
                   key={match.key}
-                  match={match}
-                  team={team}
-                  isNext={
-                    match.key ===
-                    nextMatch?.key
-                  }
-                  isLast={
-                    match.key ===
-                    lastMatch?.key
-                  }
-                  playoffAlliances={
-                    playoffAlliances
-                  }
-                  playoffType={
-                    playoffType
-                  }
-                  eventTimezone={
-                    eventTimezone
-                  }
-                />
+                  data-match-key={match.key}
+                  className="shrink-0"
+                >
+                  <MatchCard
+                    match={match}
+                    team={team}
+                    isNext={
+                      match.key ===
+                      nextMatch?.key
+                    }
+                    isLast={
+                      match.key ===
+                      lastMatch?.key
+                    }
+                    playoffAlliances={
+                      playoffAlliances
+                    }
+                    playoffType={
+                      playoffType
+                    }
+                    eventTimezone={
+                      eventTimezone
+                    }
+                  />
+                </div>
               ))}
             </div>
           ) : (
