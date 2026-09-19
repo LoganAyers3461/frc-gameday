@@ -28,7 +28,9 @@ type TBAWebhookData = {
   team_key?: string;
   team_keys?: string[];
   match_key?: string;
-  match?: TBAWebhookMatch;
+  match?: TBAWebhookMatch & {
+    [key: string]: unknown;
+  };
   awards?: TBAWebhookAward[];
 };
 
@@ -48,16 +50,26 @@ function verifyWebhook(
     return false;
   }
 
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(payload)
-    .digest("hex");
+  const expected =
+    crypto
+      .createHmac(
+        "sha256",
+        secret,
+      )
+      .update(payload)
+      .digest("hex");
 
   const expectedBuffer =
-    Buffer.from(expected, "utf8");
+    Buffer.from(
+      expected,
+      "utf8",
+    );
 
   const signatureBuffer =
-    Buffer.from(signature, "utf8");
+    Buffer.from(
+      signature,
+      "utf8",
+    );
 
   if (
     expectedBuffer.length !==
@@ -72,10 +84,16 @@ function verifyWebhook(
   );
 }
 
-export async function POST(req: Request) {
-  const payloadText = await req.text();
+export async function POST(
+  req: Request,
+) {
+  const payloadText =
+    await req.text();
+
   const signature =
-    req.headers.get("X-TBA-HMAC");
+    req.headers.get(
+      "X-TBA-HMAC",
+    );
 
   if (
     !verifyWebhook(
@@ -96,9 +114,10 @@ export async function POST(req: Request) {
   let payload: TBAWebhookPayload;
 
   try {
-    payload = JSON.parse(
-      payloadText,
-    ) as TBAWebhookPayload;
+    payload =
+      JSON.parse(
+        payloadText,
+      ) as TBAWebhookPayload;
   } catch {
     return new Response(
       "Invalid JSON",
@@ -106,8 +125,11 @@ export async function POST(req: Request) {
     );
   }
 
-  const type = payload.message_type;
-  const data = payload.message_data;
+  const type =
+    payload.message_type;
+
+  const data =
+    payload.message_data;
 
   const eventKey =
     data?.event_key ??
@@ -119,124 +141,75 @@ export async function POST(req: Request) {
   );
 
   switch (type) {
-    case "upcoming_match":
+    /*
+     * These notifications contain a complete Match
+     * object. Push that object directly into any
+     * currently-existing Redis match caches.
+     */
     case "match_score":
     case "match_video": {
-      const matchKey =
-        data?.match_key ??
-        data?.match?.key;
-
-      const teamKeys =
-        new Set<string>(
-          data?.team_keys ?? [],
-        );
-
-      if (data?.team_key) {
-        teamKeys.add(data.team_key);
-      }
-
-      for (const alliance of Object.values(
-        data?.match?.alliances ?? {},
-      )) {
-        for (const teamKey of
-          alliance.teams ?? []) {
-          teamKeys.add(teamKey);
-        }
-      }
-
-      const tags: string[] = [];
-
-      if (matchKey) {
-        tags.push(`match:${matchKey}`);
-      }
-
-      if (eventKey) {
-        tags.push(
-          `event:${eventKey}:matches`,
+      if (data?.match) {
+        await TBA.mutateMatchCaches(
+          data.match,
         );
       }
 
-      if (eventKey) {
-        for (const teamKey of teamKeys) {
-          tags.push(
-            `team:${teamKey}:event:${eventKey}:matches`,
-          );
-        }
-      }
-
-      await TBA.invalidateTags(tags);
       break;
     }
 
+    /*
+     * upcoming_match does not contain a complete Match.
+     *
+     * Merge its timing/team information into existing
+     * cached match representations.
+     */
+    case "upcoming_match": {
+      await TBA.mutateUpcomingMatch(
+        data ?? {},
+      );
+
+      break;
+    }
+
+    /*
+     * These notifications do not contain the changed
+     * match list itself, so there is nothing useful to
+     * write directly into the matches cache.
+     *
+     * The websocket signal causes the client to refetch.
+     */
     case "schedule_updated":
     case "starting_comp_level": {
-      if (eventKey) {
-        await TBA.invalidateTag(
-          `event:${eventKey}:matches`,
-        );
-      }
-
       break;
     }
 
+    /*
+     * TBA gives us the updated Event object, but not
+     * the alliance/ranking/status endpoints that our
+     * clients consume.
+     *
+     * Keep the event cache current if it already exists,
+     * then let the WSS signal trigger the derived-data
+     * refetches.
+     */
     case "alliance_selection": {
-      if (eventKey) {
-        await TBA.invalidateTags([
-          `event:${eventKey}:alliances`,
-          `event:${eventKey}:rankings`,
-          `event:${eventKey}:statuses`,
-        ]);
-      }
-
-      if (
-        eventKey &&
-        data?.team_key
-      ) {
-        await TBA.invalidateTag(
-          `team:${data.team_key}:event:${eventKey}`,
+      if (data?.event && eventKey) {
+        await TBA.replaceCached(
+          `/event/${eventKey}`,
+          data.event,
         );
       }
 
       break;
     }
 
+    /*
+     * awards_posted contains the actual awards, but our
+     * current service does not expose an awards endpoint.
+     *
+     * For now this remains a refetch signal.
+     */
     case "awards_posted": {
-      if (eventKey) {
-        await TBA.invalidateTag(
-          `event:${eventKey}:awards`,
-        );
-      }
-
-      const teamKeys =
-        new Set<string>();
-
-      if (data?.team_key) {
-        teamKeys.add(data.team_key);
-      }
-
-      for (const award of
-        data?.awards ?? []) {
-        for (const recipient of
-          award.recipient_list ?? []) {
-          if (
-            recipient.team_number != null
-          ) {
-            teamKeys.add(
-              `frc${recipient.team_number}`,
-            );
-          }
-        }
-      }
-
-      if (eventKey) {
-        await TBA.invalidateTags(
-          [...teamKeys].map(
-            (teamKey) =>
-              `team:${teamKey}:event:${eventKey}:awards`,
-          ),
-        );
-      }
-
       break;
     }
 
@@ -260,14 +233,11 @@ export async function POST(req: Request) {
   }
 
   /*
-   * The WebSocket notification is deliberately only
-   * an invalidation signal. Clients will refetch their
-   * existing data sources after receiving it.
+   * Redis is now updated BEFORE this signal is sent.
    *
-   * If Redis/WebSocket broadcasting fails, the TBA
-   * webhook itself should still succeed because the
-   * normal polling fallback will eventually refresh
-   * the client.
+   * Clients receiving the WSS event therefore refetch
+   * against Redis and normally get the webhook-mutated
+   * data without another request to TBA.
    */
   if (eventKey) {
     try {
